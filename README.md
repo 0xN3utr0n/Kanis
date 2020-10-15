@@ -12,7 +12,7 @@ Kanis is an advanced threat detection solution exclusively designed for Linux wi
 - And much more... :)
 
 ### How it works
-As an event-driven software, Kanis requires real-time interaction with the kernel; this is achieved throught [ftrace](https://www.kernel.org/doc/Documentation/trace/ftrace.txt) and the use of [Kprobes](https://www.kernel.org/doc/Documentation/kprobes.txt), as well as [Tracepoints](https://www.kernel.org/doc/Documentation/trace/tracepoints.txt). That is, it can not only monitor syscalls, but any kernel function too. The rule engine is in charge of processing all this stream of information and make sense out of it. 
+As an event-driven software, Kanis requires real-time interaction with the kernel; this is achieved through [ftrace](https://www.kernel.org/doc/Documentation/trace/ftrace.txt) and the use of [Kprobes](https://www.kernel.org/doc/Documentation/kprobes.txt), as well as [Tracepoints](https://www.kernel.org/doc/Documentation/trace/tracepoints.txt). That is, it can not only monitor syscalls, but any kernel function too. The rule engine is in charge of processing all this stream of information and make sense out of it. 
 
 Additionally, Kanis includes some modules for static heuristic analysis (such as for binaries) which further enhance the product's detection capabilities.
 
