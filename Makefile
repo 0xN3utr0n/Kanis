@@ -37,7 +37,7 @@ install:
 	@mkdir -p $(PREFIX)/files
 
 clean: clean_test
-	@rm -rf $(BINPATH)/
+	@rm -rf $(BINPATH)/*
 
 clean_test:
 	@cd $(TEST_SAMPLES) && $(MAKE) clean
