@@ -76,6 +76,7 @@ func (ctx *Context) ProcessFork(evt *Event) error {
 	fork.SetArgv(ctx.Current.GetArgv())
 	fork.SetCwd(ctx.Current.GetCwd())
 	fork.SetFlags(flags)
+	fork.SetCreds(ctx.Current.GetCreds())
 
 	logFork(fork, ctx)
 
@@ -283,4 +284,27 @@ func (ctx *Context) ProcessSigaction(evt *Event) (unix.Signal, error) {
 	logSigaction(s.String(), ctx)
 
 	return s, nil
+}
+
+// ProcessCommitCreds Processes incoming COMMIT_CREDS events for a given task.
+// Used to retrieve the task's uid, gid, eid and egid.
+func (ctx *Context) ProcessCommitCreds(evt *Event) error {
+	r, err := strconv.Atoi(evt.RetValue[0])
+	if err != nil {
+		return err
+	} else if r < 0 {
+		ctx.Debug(evt.Function, "Failed function call")
+		return nil
+	}
+
+	args := evt.Args.([]string)
+	if len(args) != 4 {
+		return nil
+	}
+
+	var creds [4]string
+	copy(creds[:], args)
+	ctx.Current.SetCreds(creds)
+
+	return nil
 }

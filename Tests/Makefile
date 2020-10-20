@@ -5,7 +5,6 @@ CC=gcc
 all: sample2 sample3 sample4 sample5
 
 sample2:
-	@mkdir $@
 	@cp /usr/bin/sleep $@/$@.bin
 	@upx -9 $@/$@.bin 1>/dev/null
 
