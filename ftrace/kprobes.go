@@ -124,6 +124,13 @@ var kprobes = []kProbe{
 		"arg??_int1=$retval:s32",
 		true,
 	},
+	kProbe{
+		"COMMIT_CREDS",
+		[]string{"commit_creds"},
+		"arg??_int1=+4(%di):u32 arg??_int2=+8(%di):u32 arg??_int3=+20(%di):u32 arg??_int4=+24(%di):u32",
+		"arg??_int1=$retval:s32",
+		true,
+	},
 }
 
 func (kfunc *kProbe) enable(kevents *os.File, cookie string) error {

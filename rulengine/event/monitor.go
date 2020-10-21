@@ -176,10 +176,17 @@ func Send(event string, pid int, msg string, current *task.Task, log *zerolog.Ev
 		log.Str("Event", event)
 	}
 
+	creds := current.GetCreds()
+
 	log.Dict("Current", zerolog.Dict().
 		Str("Comm", current.GetComm()).
 		Int("Pid", pid).
 		Int("VPid", current.GetVPid()).
 		Str("Task", typeTask).
+		Dict("UIDS", zerolog.Dict().
+			Str("uid", creds[0]).
+			Str("gid", creds[1]).
+			Str("euid", creds[2]).
+			Str("egid", creds[3])).
 		Int("Danger", current.GetScore())).Msg(msg)
 }

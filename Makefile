@@ -24,15 +24,12 @@ PREFIX          ?= /var/kanis
 all: build
 
 build:
-	@mkdir $(BINPATH)
 	@GOBIN=$(BINPATH) go install .
 
 build_with_race_detector:
-	@mkdir $(BINPATH)
 	@GOBIN=$(BINPATH) go install -race .
 
 build_test:
-	@mkdir $(BINPATH)
 	@cd $(TEST_SAMPLES) && $(MAKE) all
 	@go test -o $(BINTEST) -tags integration -c rulengine/threat/threats_test.go
 
@@ -40,7 +37,7 @@ install:
 	@mkdir -p $(PREFIX)/files
 
 clean: clean_test
-	@rm -rf $(BINPATH)/
+	@rm -rf $(BINPATH)/*
 
 clean_test:
 	@cd $(TEST_SAMPLES) && $(MAKE) clean

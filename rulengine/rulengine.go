@@ -103,6 +103,11 @@ func worker(RuleIn <-chan *event.Event, tasks *task.List) {
 				ctx.Error(evt.Function, err)
 			}
 
+		case "COMMIT_CREDS":
+			if err := ctx.ProcessCommitCreds(evt); err != nil {
+				ctx.Error(evt.Function, err)
+			}
+
 		case "PTRACE":
 			if tracee, err := ctx.ProcessPtrace(evt); err != nil {
 				ctx.Error(evt.Function, err)

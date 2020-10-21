@@ -112,6 +112,6 @@ func createTask(name string, pid int) (*Task, error) {
 	ntask.SetArgv(args)
 	ntask.SetCwd(cwd)
 	ntask.SetFlags(flags)
-
+	ntask.SetCreds(ps.UIDs)
 	return ntask, nil
 }

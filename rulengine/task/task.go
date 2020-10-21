@@ -31,6 +31,7 @@ type Task struct {
 	ppid     int // TODO: insert into db
 	cwd      string
 	bin      *elf.Elf
+	creds    [4]string
 	flags    uint64
 	signals  []bool
 	tracer   int
@@ -117,6 +118,12 @@ func (current *Task) SetSignal(signal int) {
 func (current *Task) SetElf(bin *elf.Elf) {
 	current.mutex.Lock()
 	current.bin = bin
+	current.mutex.Unlock()
+}
+
+func (current *Task) SetCreds(creds [4]string) {
+	current.mutex.Lock()
+	current.creds = creds
 	current.mutex.Unlock()
 }
 
@@ -210,6 +217,14 @@ func (current *Task) GetElf() *elf.Elf {
 	current.mutex.RUnlock()
 
 	return bin
+}
+
+func (current *Task) GetCreds() [4]string {
+	current.mutex.RLock()
+	creds := current.creds
+	current.mutex.RUnlock()
+
+	return creds
 }
 
 func (current *Task) GetTracer() int {
