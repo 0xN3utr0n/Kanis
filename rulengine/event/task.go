@@ -21,7 +21,6 @@ import (
 	"strconv"
 
 	"github.com/0xN3utr0n/Kanis/rulengine/database"
-	"github.com/0xN3utr0n/Kanis/rulengine/elf"
 	"github.com/0xN3utr0n/Kanis/rulengine/task"
 	"golang.org/x/sys/unix"
 )
@@ -73,11 +72,6 @@ func (ctx *Context) ProcessFork(evt *Event) error {
 		fork.SetTracer(tracer)
 	}
 
-	fork.SetArgv(ctx.Current.GetArgv())
-	fork.SetCwd(ctx.Current.GetCwd())
-	fork.SetFlags(flags)
-	fork.SetCreds(ctx.Current.GetCreds())
-
 	logFork(fork, ctx)
 
 	return nil
@@ -104,9 +98,14 @@ func (ctx *Context) ProcessNewTask(evt *Event) error {
 	}
 
 	child := new(task.Task)
-	child.SetComm(ctx.Current.GetComm())
 	child.SetPPid(ctx.PID)
+	child.SetComm(ctx.Current.GetComm())
+	child.SetArgv(ctx.Current.GetArgv())
+	child.SetCwd(ctx.Current.GetCwd())
+	child.SetCreds(ctx.Current.GetCreds())
 	child.SetFlags(flags)
+	child.SetNamespaces(ctx.Current.GetNamespaces())
+	child.SwitchNamespace(flags)
 	child.UpdateScore(ctx.Current.GetScore())
 
 	ctx.List.Insert(fork, child)
@@ -131,119 +130,6 @@ func (ctx *Context) ProcessExit(evt *Event) error {
 	ctx.List.Delete(ctx.PID)
 
 	logExit(evt.Args.([]string)[0], ctx)
-
-	return nil
-}
-
-// ProcessExecve Processes incoming EXECVE events for a given task.
-// Used to retrieve the task's executable and commandline arguments.
-func (ctx *Context) ProcessExecve(evt *Event) (bool, error) {
-	r, err := strconv.Atoi(evt.RetValue[0])
-	if err != nil {
-		return false, err
-	} else if r != 0 {
-		ctx.Debug(evt.Function, "Failed function call")
-		return false, nil
-	}
-
-	// arg[0] = Contains the executable's path.
-	// arg[n] = Additional arguments.
-	argv := evt.Args.([]string)
-
-	file, err := elf.GetAbsFilePath(ctx.Current.GetCwd(), argv[0])
-	if err != nil {
-		if a, ok := task.FetchExecutable(nil, ctx.PID, evt.Args.([]string)[0]); ok == true {
-			file = a[0]
-		}
-	}
-
-	argv[0] = file
-
-	logExecve(ctx, argv)
-
-	ctx.Current.SetComm(argv[0])
-	ctx.Current.SetArgv(argv)
-
-	e, err := elf.New(argv[0])
-	if err != nil || e == nil {
-		return false, err
-	}
-
-	ctx.Current.SetElf(e)
-
-	return true, nil
-}
-
-// ProcessSchedExecve Processes incoming sched_process_exec events for a given task.
-// It's a backup event for cases where the corresponding EXECVE event is missed.
-// Used to retrieve the task's executable and commandline arguments.
-func (ctx *Context) ProcessSchedExecve(evt *Event) (bool, error) {
-
-	// args[0] = Contains the executable's path.
-	// args[1] = PID of the task who will be assigned to the new executable. (current)
-	// args[2] = PID of the task who made the sys_execve() call. (Already dead)
-	args := evt.Args.([]string)
-	if len(args) != 3 {
-		return false, errors.New("Invalid arguments - " + evt.Function)
-	}
-
-	oldPid, err := strconv.Atoi(args[2])
-	if err != nil || oldPid <= 1 {
-		return false, err
-	}
-
-	// In most cases it will be the real caller.
-	if oldPid == ctx.PID {
-		return false, nil
-	}
-
-	var argv []string
-
-	// Delete the caller task.
-	t := &Context{ctx.List.Get(oldPid), ctx.List, oldPid}
-	t.ProcessExit(&Event{Args: interface{}([]string{"0"})})
-
-	if a, ok := task.FetchExecutable(nil, ctx.PID, evt.Args.([]string)[0]); ok == true {
-		argv = a
-	} else {
-		argv[0] = args[0]
-	}
-
-	logExecve(ctx, argv)
-
-	ctx.Current.SetComm(argv[0])
-	ctx.Current.SetArgv(argv)
-
-	e, err := elf.New(argv[0])
-	if err != nil || e == nil {
-		return false, err
-	}
-
-	ctx.Current.SetElf(e)
-
-	return true, nil
-}
-
-// ProcessUnshare Processes incoming UNSHARE events for a given task.
-// Used to detect the creation of new PID Namespaces.
-func (ctx *Context) ProcessUnshare(evt *Event) error {
-	r, err := strconv.Atoi(evt.RetValue[0])
-	if err != nil {
-		return err
-	} else if r != 0 {
-		ctx.Debug(evt.Function, "Failed function call")
-		return nil
-	}
-
-	args := evt.Args.([]string)
-	flags, err := strconv.Atoi(args[0])
-	if err != nil {
-		return err
-	}
-
-	if (flags & unix.CLONE_NEWPID) != 0 {
-		ctx.Current.SetVPid(newPidNS)
-	}
 
 	return nil
 }

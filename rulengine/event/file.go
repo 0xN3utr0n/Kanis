@@ -16,10 +16,15 @@
 package event
 
 import (
+	"errors"
+	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/0xN3utr0n/Kanis/rulengine/database"
 	"github.com/0xN3utr0n/Kanis/rulengine/elf"
+	"github.com/0xN3utr0n/Kanis/rulengine/task"
 	"golang.org/x/sys/unix"
 )
 
@@ -44,7 +49,7 @@ func (ctx *Context) ProcessOpen(evt *Event) error {
 		return err
 	}
 
-	file, err := elf.GetAbsFilePath(ctx.Current.GetCwd(), args[0])
+	file, err := getAbsFilePath(ctx.Current, args[0])
 	if err != nil {
 		return err
 	}
@@ -115,7 +120,7 @@ func (ctx *Context) ProcessUnlink(evt *Event) (string, error) {
 		return "", nil
 	}
 
-	file, err := elf.GetAbsFilePath(ctx.Current.GetCwd(), evt.Args.([]string)[0])
+	file, err := getAbsFilePath(ctx.Current, evt.Args.([]string)[0])
 	if err != nil {
 		return "", err
 	}
@@ -152,7 +157,7 @@ func (ctx *Context) ProcessRename(evt *Event) (*elf.Elf, error) {
 		return nil, nil
 	}
 
-	old, err := elf.GetAbsFilePath(ctx.Current.GetCwd(), args[0])
+	old, err := getAbsFilePath(ctx.Current, args[0])
 	if err != nil {
 		return nil, err
 	}
@@ -166,7 +171,7 @@ func (ctx *Context) ProcessRename(evt *Event) (*elf.Elf, error) {
 		}
 	}
 
-	new, err := elf.GetAbsFilePath(ctx.Current.GetCwd(), args[1])
+	new, err := getAbsFilePath(ctx.Current, args[1])
 	if err != nil {
 		return nil, err
 	}
@@ -197,11 +202,99 @@ func (ctx *Context) ProcessChdir(evt *Event) error {
 		return nil
 	}
 
-	cwd, err := elf.GetAbsDirPath(ctx.Current.GetCwd(), evt.Args.([]string)[0])
+	cwd, err := getAbsDirPath(ctx.Current, evt.Args.([]string)[0])
 	if err != nil {
 		return err
 	}
 
 	ctx.Current.SetCwd(cwd)
 	return nil
+}
+
+// getAbsFilePath returns a valid and absolute path for the given file.
+// Note: it follows symbolic links.
+func getAbsFilePath(current *task.Task, file string) (string, error) {
+	cwd := current.GetCwd()
+	ns, _ := current.NamespaceData(task.MountNs)
+
+	if ns != "" {
+		cwd = ns
+	} else if filepath.IsAbs(file) == true { // Just in case the file has already been deleted
+		dir, err := filepath.EvalSymlinks(filepath.Dir(file))
+		if err == nil {
+			cwd = dir
+			file = filepath.Base(file)
+		}
+	}
+
+	file = filepath.Join(cwd, file)
+	if filepath.IsAbs(file) == false {
+		return "", errors.New("Invalid path: " + file)
+	}
+
+	file, err := followSymlinks(file, ns)
+	if err != nil {
+		return "", err
+	}
+
+	return file, nil
+}
+
+// getAbsDirPath returns a valid and absolute path for the given directory.
+// Note: it follows symbolic links.
+func getAbsDirPath(current *task.Task, dir string) (string, error) {
+	cwd := current.GetCwd()
+	ns, _ := current.NamespaceData(task.MountNs)
+
+	if ns != "" {
+		cwd = ns
+	} else if filepath.IsAbs(dir) == true {
+		return dir, nil
+	}
+
+	dir = filepath.Join(cwd, dir)
+	if filepath.IsAbs(dir) == false {
+		return "", errors.New("Invalid path: " + dir)
+	}
+
+	dir, err := followSymlinks(dir, ns)
+	if err != nil {
+		return "", err
+	}
+
+	return dir, nil
+}
+
+func followSymlinks(path, mount string) (string, error) {
+	var (
+		prev string
+		err  error
+	)
+
+	if mount == "" {
+		path, err = filepath.EvalSymlinks(path)
+		if err != nil {
+			return "", err
+		}
+
+	} else {
+		for i := 0; i < 5 && prev != path; i++ {
+			prev = path
+			tmp, _ := os.Readlink(path)
+			if tmp != "" && strings.HasPrefix(tmp, mount) == false {
+				path = filepath.Join(mount, tmp)
+			}
+		}
+	}
+
+	return path, nil
+}
+
+func cleanPath(path string, current *task.Task) string {
+	mount, err := current.NamespaceData(task.MountNs)
+	if mount == "" || err != nil {
+		return path
+	}
+
+	return strings.ReplaceAll(path, mount, "")
 }

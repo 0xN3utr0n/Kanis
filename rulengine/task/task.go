@@ -33,9 +33,10 @@ type Task struct {
 	bin      *elf.Elf
 	creds    [4]string
 	flags    uint64
+	ns       Namespaces
 	signals  []bool
 	tracer   int
-	tracees  TraceeList
+	tracees  Tracees
 	score    int // danger score
 	lastFork int // TODO: insert into db
 	mutex    sync.RWMutex
@@ -47,7 +48,7 @@ type Tracee struct {
 	Last       int // Most recent ptrace operation done.
 }
 
-type TraceeList map[int]Tracee
+type Tracees map[int]Tracee
 
 // MaxSignals Maximun number of monitored signals per task.
 const MaxSignals = 17
@@ -139,7 +140,7 @@ func (current *Task) SetTracee(tpid int, tracee Tracee) {
 		delete(current.tracees, tracee.Pid)
 	} else {
 		if current.tracees == nil {
-			current.tracees = make(TraceeList)
+			current.tracees = make(Tracees)
 		}
 		current.tracees[tpid] = tracee
 	}

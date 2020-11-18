@@ -76,6 +76,7 @@ func logExit(arg string, ctx *Context) {
 
 func logExecve(ctx *Context, newArgv []string) {
 	if monitor != nil {
+		newArgv[0] = cleanPath(newArgv[0], ctx.Current)
 		log := monitor.Info("RuleEngine").
 			Strs("Argv", newArgv).
 			Str("Type", "Event")
@@ -107,7 +108,7 @@ func logSigaction(signal string, ctx *Context) {
 func logOpen(path string, ctx *Context) {
 	if monitor != nil {
 		log := monitor.Info("RuleEngine").
-			Str("File", path).
+			Str("File", cleanPath(path, ctx.Current)).
 			Str("Type", "Event")
 
 		Send("OPEN", ctx.PID, "", ctx.Current, log)
@@ -117,7 +118,7 @@ func logOpen(path string, ctx *Context) {
 func logClose(path string, ctx *Context) {
 	if monitor != nil {
 		log := monitor.Info("RuleEngine").
-			Str("File", path).
+			Str("File", cleanPath(path, ctx.Current)).
 			Str("Type", "Event")
 
 		Send("CLOSE", ctx.PID, "", ctx.Current, log)
@@ -127,7 +128,7 @@ func logClose(path string, ctx *Context) {
 func logUnlink(path string, ctx *Context) {
 	if monitor != nil {
 		log := monitor.Info("RuleEngine").
-			Str("File", path).
+			Str("File", cleanPath(path, ctx.Current)).
 			Str("Type", "Event")
 
 		Send("UNLINK", ctx.PID, "", ctx.Current, log)
@@ -137,11 +138,20 @@ func logUnlink(path string, ctx *Context) {
 func logRename(src, dst string, ctx *Context) {
 	if monitor != nil {
 		log := monitor.Info("RuleEngine").
-			Str("Old", src).
-			Str("New", dst).
+			Str("Old", cleanPath(src, ctx.Current)).
+			Str("New", cleanPath(dst, ctx.Current)).
 			Str("Type", "Event")
 
 		Send("RENAME", ctx.PID, "", ctx.Current, log)
+	}
+}
+
+func logMount(path string, msg string, ctx *Context) {
+	if monitor != nil {
+		log := monitor.Info("RuleEngine").Dict("Mount", zerolog.Dict().
+			Str("Path", path).Str("Type", msg)).Str("Type", "Event")
+
+		Send("MOUNT", ctx.PID, "", ctx.Current, log)
 	}
 }
 
@@ -164,7 +174,10 @@ func (ctx *Context) Error(function string, err error) {
 }
 
 func Send(event string, pid int, msg string, current *task.Task, log *zerolog.Event) {
-	var typeTask string
+	var (
+		typeTask string
+		name     string
+	)
 
 	if current.IsThread() == true {
 		typeTask = "Thread"
@@ -176,13 +189,23 @@ func Send(event string, pid int, msg string, current *task.Task, log *zerolog.Ev
 		log.Str("Event", event)
 	}
 
+	if current.IsInContainer() == true {
+		name, _ = current.NamespaceData(task.UtsNs)
+		if len(name) == 0 {
+			name = "Unknown"
+		}
+	} else if len(name) == 0 {
+		name = "None"
+	}
+
 	creds := current.GetCreds()
 
 	log.Dict("Current", zerolog.Dict().
-		Str("Comm", current.GetComm()).
+		Str("Comm", cleanPath(current.GetComm(), current)).
 		Int("Pid", pid).
 		Int("VPid", current.GetVPid()).
 		Str("Task", typeTask).
+		Str("Container", name).
 		Dict("UIDS", zerolog.Dict().
 			Str("uid", creds[0]).
 			Str("gid", creds[1]).

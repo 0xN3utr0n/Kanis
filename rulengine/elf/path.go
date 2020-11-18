@@ -16,54 +16,9 @@
 package elf
 
 import (
-	"errors"
 	"path/filepath"
 	"strings"
 )
-
-// GetAbsFilePath returns a valid and absolute path for the given file.
-// Note: it follows symbolic links.
-func GetAbsFilePath(cwd, file string) (string, error) {
-	if filepath.IsAbs(file) == true { // Just in case the file has already been deleted
-		dir, err := filepath.EvalSymlinks(filepath.Dir(file))
-		if err == nil {
-			cwd = dir
-			file = filepath.Base(file)
-		}
-	}
-
-	file = filepath.Join(cwd, file)
-	if filepath.IsAbs(file) == false {
-		return "", errors.New("Invalid path: " + file)
-	}
-
-	path, err := filepath.EvalSymlinks(file)
-	if err != nil { // Don't care if the file doesn't exist anymore
-		return file, nil
-	}
-
-	return path, nil
-}
-
-// GetAbsDirPath returns a valid and absolute path for the given directory.
-// Note: it follows symbolic links.
-func GetAbsDirPath(cwd, dir string) (string, error) {
-	if filepath.IsAbs(dir) == true {
-		return dir, nil
-	}
-
-	dir = filepath.Join(cwd, dir)
-	if filepath.IsAbs(dir) == false {
-		return "", errors.New("Invalid path: " + dir)
-	}
-
-	abs, err := filepath.EvalSymlinks(dir)
-	if err != nil {
-		return "", err
-	}
-
-	return abs, nil
-}
 
 // CleanPath returns the base of the given path.
 func CleanPath(path string) string {

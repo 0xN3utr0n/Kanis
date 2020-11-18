@@ -48,6 +48,10 @@ func Run(RuleIn <-chan *event.Event, main *logger.Logger, showEvents bool, stdou
 		log.FatalS(err, "RuleEngine")
 	}
 
+	if err := database.CreateNameSpacesTable(); err != nil {
+		log.FatalS(err, "RuleEngine")
+	}
+
 	tasks := task.NewList(baseNumTasks)
 
 	// TODO: add a worker pool
@@ -103,8 +107,23 @@ func worker(RuleIn <-chan *event.Event, tasks *task.List) {
 				ctx.Error(evt.Function, err)
 			}
 
+		case "MOUNT":
+			if err := ctx.ProcessMount(evt); err != nil {
+				ctx.Error(evt.Function, err)
+			}
+
 		case "COMMIT_CREDS":
 			if err := ctx.ProcessCommitCreds(evt); err != nil {
+				ctx.Error(evt.Function, err)
+			}
+
+		case "SETHOSTNAME":
+			if err := ctx.ProcessSetHostname(evt); err != nil {
+				ctx.Error(evt.Function, err)
+			}
+
+		case "SETNS":
+			if err := ctx.ProcessNs(evt); err != nil {
 				ctx.Error(evt.Function, err)
 			}
 

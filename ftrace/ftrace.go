@@ -148,10 +148,11 @@ func fixSyscallParams(function, params string) string {
 	// Since version 4.17, the way the kernel passes arguments to the syscalls
 	// changed. From then on, a regs structure pointer
 	// is passed instead of the regs itself.
-	di := strings.ReplaceAll(params, "%di", "+112(%di)")
-	si := strings.ReplaceAll(di, "%si", "+104(%di)")
+	regs := strings.ReplaceAll(params, "%di", "+112(%di)")
+	regs = strings.ReplaceAll(regs, "%si", "+104(%di)")
+	regs = strings.ReplaceAll(regs, "%r10", "+56(%di)")
 
-	return si
+	return regs
 }
 
 // newCookie generates 2 random bytes in order to safely parse
