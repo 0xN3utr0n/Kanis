@@ -217,14 +217,16 @@ func getAbsFilePath(current *task.Task, file string) (string, error) {
 	cwd := current.GetCwd()
 	ns, _ := current.NamespaceData(task.MountNs)
 
-	if ns != "" {
-		cwd = ns
-	} else if filepath.IsAbs(file) == true { // Just in case the file has already been deleted
-		dir, err := filepath.EvalSymlinks(filepath.Dir(file))
-		if err == nil {
-			cwd = dir
-			file = filepath.Base(file)
+	if filepath.IsAbs(file) == true {
+		if ns != "" {
+			file = filepath.Join(ns, file)
 		}
+		dir, err := followSymlinks(filepath.Dir(file), ns)
+		if err != nil {
+			return "", nil
+		}
+		cwd = dir
+		file = filepath.Base(file)
 	}
 
 	file = filepath.Join(cwd, file)

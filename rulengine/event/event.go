@@ -54,13 +54,12 @@ func Filter(evt *Event, ctx *Context, proc bool) bool {
 		return false
 	}
 
-	kanis := ctx.List.Get(os.Getpid())
-
 	// init process generates too much noise.
 	if evt.PID == 1 {
 		status = true
 
-	} else if kanis != nil && ctx.Current.GetComm() == kanis.GetComm() {
+	} else if kanis, err := os.Readlink("/proc/self/exe"); err == nil &&
+		ctx.Current.GetComm() == kanis {
 		status = true
 
 	} else if proc == true {

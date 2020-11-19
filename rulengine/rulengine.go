@@ -72,6 +72,7 @@ func worker(RuleIn <-chan *event.Event, tasks *task.List) {
 			continue
 		}
 
+		// Use a hashmap instead of a switch (for performance)
 		switch evt.Function {
 		case "EXECVE":
 			if analyse, err := ctx.ProcessExecve(evt); err != nil {

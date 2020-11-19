@@ -76,9 +76,9 @@ func logExit(arg string, ctx *Context) {
 
 func logExecve(ctx *Context, newArgv []string) {
 	if monitor != nil {
-		newArgv[0] = cleanPath(newArgv[0], ctx.Current)
+		cp := []string{cleanPath(newArgv[0], ctx.Current)}
 		log := monitor.Info("RuleEngine").
-			Strs("Argv", newArgv).
+			Strs("Argv", append(cp, newArgv[1:]...)).
 			Str("Type", "Event")
 
 		Send("EXECVE", ctx.PID, "", ctx.Current, log)
