@@ -21,43 +21,43 @@ type information struct {
 }
 
 var threats = map[string]information{
-	"Execution Flow Hijacking": information{
+	"Execution Flow Hijacking": {
 		description: "Malicious payloads can be executed by hijacking/infecting the control flow of a benign binary. Common technique among parasites, viruses and troyans.",
 		ioc:         "Executable File",
 	},
-	"Software Packing": information{
+	"Software Packing": {
 		description: "It's a method of compressing or encrypting an executable in order to conceal its code.",
 		ioc:         "Packed Executable File",
 	},
-	"Executable Deletion": information{
+	"Executable Deletion": {
 		description: "Malicious process may delete its own executable file in order to minimize its footprint.",
 		ioc:         "Executable File",
 	},
-	"Kernel Thread Masquerading": information{
+	"Kernel Thread Masquerading": {
 		description: "Occurs when a malicious executable masquerades its name as a kernel thread in order to make it appear legitimate.",
 		ioc:         "Executable File",
 	},
-	"Space After Filename Masquerading": information{
+	"Space After Filename Masquerading": {
 		description: "An executable's true filetype can be hidden by changing its extension and appending a space at the end of the filename.",
 		ioc:         "Executable File",
 	},
-	"Process Injection": information{
+	"Process Injection": {
 		description: "It's a method of executing arbitrary code in the address space of a separate live process.",
 		ioc:         "Target's PID",
 	},
-	"Traceme Protection": information{
+	"Traceme Protection": {
 		description: "Commonly used as an anti-debugging technique in which a malicious process forces its parent to trace him.",
 		ioc:         "Tracer's PID",
 	},
-	"Self-Tracing Protection": information{
+	"Self-Tracing Protection": {
 		description: "Anti-debugging technique in which the malicious process traces itself.",
 		ioc:         "Tracer's PID",
 	},
-	"Two-Way-Tracing Protection": information{
+	"Two-Way-Tracing Protection": {
 		description: "Anti-debugging technique in which two related processes trace each other. Usual indicator of Nanomites technique.",
 		ioc:         "Tracer's PID",
 	},
-	"SIGTRAP-Handler Protection": information{
+	"SIGTRAP-Handler Protection": {
 		description: "Anti-debugging technique in which the malicious process sets up a signal handler to catch SIGTRAP signals issued by breakpoint instructions.",
 		ioc:         "None",
 	},

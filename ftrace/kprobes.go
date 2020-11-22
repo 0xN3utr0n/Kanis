@@ -37,7 +37,7 @@ type kProbe struct {
 }
 
 var kprobes = []kProbe{
-	kProbe{
+	{
 		"EXECVE",
 		[]string{"sys_execve ", "__x64_sys_execve"},
 		"arg??_str1=+0(%di):string arg??_str2=+0(+8(%si)):string " +
@@ -47,105 +47,105 @@ var kprobes = []kProbe{
 		"arg??_int1=$retval:s32",
 		false,
 	},
-	kProbe{
+	{
 		"EXIT",
 		[]string{"do_exit"},
 		"arg??_int1=%di:s32",
 		"arg??_int1=$retval:s32",
 		false,
 	},
-	kProbe{
+	{
 		"FORK",
 		[]string{"do_fork", "_do_fork"},
 		"arg??_int1=%di:s32", // TODO: delete this kprobe
 		"arg??_int1=$retval:s32",
 		false,
 	},
-	kProbe{
+	{
 		"UNSHARE",
 		[]string{"sys_unshare", "__x64_sys_unshare"},
 		"arg??_int1=%di:x64",
 		"arg??_int1=$retval:s32",
 		true,
 	},
-	kProbe{
+	{
 		"PTRACE",
 		[]string{"sys_ptrace", "__x64_sys_ptrace"},
 		"arg??_int1=%di:s32 arg??_int2=%si:s32",
 		"arg??_int1=$retval:s32",
 		true,
 	},
-	kProbe{
+	{
 		"PROC_VM_WRITERV",
 		[]string{"SyS_process_vm_writev", "__x64_sys_process_vm_writev"},
 		"arg??_int1=%di:s32",
 		"arg??_int1=$retval:s32",
 		true,
 	},
-	kProbe{
+	{
 		"CHDIR",
 		[]string{"sys_chdir", "ksys_chdir"},
 		"arg??_str1=+0(%di):string",
 		"arg??_int1=$retval:s32",
 		false,
 	},
-	kProbe{
+	{
 		"SIGACTION",
 		[]string{"do_sigaction"},
 		"arg??_int1=%di:s32 arg??_int2=+0(%si):s32",
 		"arg??_int1=$retval:s32",
 		true,
 	},
-	kProbe{
+	{
 		"OPEN",
 		[]string{"do_sys_open"},
 		"arg??_str1=+0(%si):string arg??_int1=%dx:s32",
 		"arg??_int1=$retval:s32",
 		false,
 	},
-	kProbe{
+	{
 		"CLOSE",
 		[]string{"sys_close", "__x64_sys_close"},
 		"arg??_int1=%di:s32",
 		"arg??_int1=$retval:s32",
 		false,
 	},
-	kProbe{
+	{
 		"UNLINK",
 		[]string{"do_unlinkat"},
 		"arg??_str1=+0(+0(%si)):string",
 		"arg??_int1=$retval:s32",
 		true,
 	},
-	kProbe{
+	{
 		"RENAME",
 		[]string{"do_renameat2", "sys_renameat2"},
 		"arg??_str1=+0(%si):string arg??_str2=+0(%cx):string",
 		"arg??_int1=$retval:s32",
 		true,
 	},
-	kProbe{
+	{
 		"COMMIT_CREDS",
 		[]string{"commit_creds"},
 		"arg??_int1=+4(%di):u32 arg??_int2=+8(%di):u32 arg??_int3=+20(%di):u32 arg??_int4=+24(%di):u32",
 		"arg??_int1=$retval:s32",
 		true,
 	},
-	kProbe{
+	{
 		"MOUNT",
 		[]string{"sys_mount", "__x64_sys_mount"},
 		"arg??_str1=+0(%di):string arg??_int2=%r10:x64",
 		"arg??_int1=$retval:s32",
 		true,
 	},
-	kProbe{
+	{
 		"SETHOSTNAME",
 		[]string{"sys_sethostname", "__x64_sys_sethostname"},
 		"arg??_str1=+0(%di):string",
 		"arg??_int1=$retval:s32",
 		true,
 	},
-	kProbe{
+	{
 		"SETNS",
 		[]string{"sys_setns", "__x64_sys_setns"},
 		"arg??_str1=%si:x64",

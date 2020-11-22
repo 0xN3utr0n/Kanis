@@ -50,4 +50,4 @@ else
 endif
 	
 fmt:
-	@$(GO)fmt -l -w $(PACKAGES)
+	@$(GO)fmt -l -s -w $(PACKAGES)

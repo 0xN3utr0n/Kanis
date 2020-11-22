@@ -26,11 +26,11 @@ type tracepoint struct {
 }
 
 var tracepoints = []tracepoint{
-	tracepoint{
+	{
 		"task:task_newtask",
 		false,
 	},
-	tracepoint{
+	{
 		"sched:sched_process_exec",
 		false,
 	},
