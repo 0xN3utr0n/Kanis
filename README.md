@@ -3,7 +3,7 @@ Kanis is an advanced threat detection solution exclusively designed for Linux wi
 
 ### Features
 - Real-time binary monitoring.
-- Container monitoring (_In progress_).
+- Container monitoring.
 - Kernel event monitoring.
 - ELF Viruses/Trojans detection.
 - ELF anti-debugging techniques detection.
