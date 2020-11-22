@@ -15,8 +15,12 @@
 
 package database
 
-// CreateNameSpacesTable Creates the File Descriptor table.
+// CreateNameSpacesTable Creates a global NS table. All system-wide namespaces
+// will be registered here.
 func CreateNameSpacesTable() error {
+	// 'flag' indicates the NS type (mount, pid...).
+	// 'data' stores system critical information. (Too generic field, perhaps in the future will be changed)
+	// Ex: For Hostname NS it (surprisingly) stores the assigned hostname.
 	create := `CREATE TABLE
 	mem.Namespaces (
 		"flag" integer,
@@ -37,7 +41,7 @@ func CreateNameSpacesTable() error {
 	return nil
 }
 
-// GetNamespace
+// GetNamespace returns all the information associated with the given namespace.
 func GetNamespace(id int64) (flag uint64, data string, err error) {
 
 	getpath := `SELECT flag, data FROM Namespaces WHERE rowid=?`
@@ -63,7 +67,7 @@ func GetNamespace(id int64) (flag uint64, data string, err error) {
 	return flag, data, nil
 }
 
-// NewNamespace
+// NewNamespace creates a new namespace entry.
 func NewNamespace(flag uint64, data string) (int64, error) {
 	insert := `INSERT INTO Namespaces(flag, data) VALUES (?,?)`
 
@@ -87,6 +91,7 @@ func NewNamespace(flag uint64, data string) (int64, error) {
 	return id, nil
 }
 
+// UpdateNamespace updates an already existing namespace entry.
 func UpdateNamespace(id int64, data string) error {
 	insert := `UPDATE Namespaces SET data=? WHERE rowid=?`
 

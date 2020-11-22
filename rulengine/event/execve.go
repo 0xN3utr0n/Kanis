@@ -41,7 +41,7 @@ func (ctx *Context) ProcessExecve(evt *Event) (bool, error) {
 	if argv[0] == "/proc/self/exe" {
 		argv[0] = ctx.Current.GetComm()
 	} else {
-		argv[0] = processExecveArgv(argv[0], evt.Args.([]string)[0], ctx)[0]
+		argv[0] = processExecveArgv(argv[0], evt.Comm, ctx)[0]
 	}
 
 	logExecve(ctx, argv)
@@ -77,7 +77,7 @@ func (ctx *Context) ProcessSchedExecve(evt *Event) (bool, error) {
 		return false, err
 	}
 
-	// In most cases it will be the real caller.
+	// This is the usual behavior: Current task is sys_execve() caller.
 	if oldPid == ctx.PID {
 		return false, nil
 	}
@@ -88,7 +88,7 @@ func (ctx *Context) ProcessSchedExecve(evt *Event) (bool, error) {
 	t := &Context{ctx.List.Get(oldPid), ctx.List, oldPid}
 	t.ProcessExit(&Event{Args: interface{}([]string{"0"})})
 
-	argv = processExecveArgv(argv[0], evt.Args.([]string)[0], ctx)
+	argv = processExecveArgv(argv[0], evt.Comm, ctx)
 
 	logExecve(ctx, argv)
 
@@ -105,12 +105,14 @@ func (ctx *Context) ProcessSchedExecve(evt *Event) (bool, error) {
 	return true, nil
 }
 
+// processExecveArgv Tries different methods in order to obtain the task's command-line arguments.
 func processExecveArgv(comm, name string, ctx *Context) []string {
 	argv := []string{""}
 	proc := true
 
+	// Don't bother reading '/proc/' if 'comm' has a valid executable path.
 	if comm != "" {
-		comm, _ = getAbsFilePath(ctx.Current, comm)
+		comm, _ = absFilePath(ctx.Current, comm)
 		if comm != "" {
 			proc = false
 		}
@@ -121,10 +123,10 @@ func processExecveArgv(comm, name string, ctx *Context) []string {
 			argv = a
 			comm = a[0]
 		} else {
-			comm = name
+			comm = name // As a last resort use the process' name. (Appears in every ftrace event)
 		}
 
-		comm, _ = getAbsFilePath(ctx.Current, comm)
+		comm, _ = absFilePath(ctx.Current, comm)
 		if comm == "" {
 			comm = name
 		}

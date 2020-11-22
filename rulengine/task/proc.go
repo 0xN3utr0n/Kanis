@@ -51,8 +51,8 @@ func (current *Task) IsDead(pid int) bool {
 	return status
 }
 
-// fetchExecutable returns the path of the task's executable
-// along with the commandline arguments.
+// FetchExecutable returns the path of the task's executable
+// along with the commandline arguments (by reading '/proc/').
 func FetchExecutable(p *procfs.Proc, pid int, name string) ([]string, bool) {
 	if p == nil {
 		if d, err := procfs.NewProc(pid); err != nil {

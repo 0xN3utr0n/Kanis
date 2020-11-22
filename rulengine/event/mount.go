@@ -23,6 +23,7 @@ import (
 	"golang.org/x/sys/unix"
 )
 
+// ProcessMount Processes incoming Mount events for a given task.
 func (ctx *Context) ProcessMount(evt *Event) error {
 	r, err := strconv.Atoi(evt.RetValue[0])
 	if err != nil {
@@ -49,13 +50,14 @@ func (ctx *Context) ProcessMount(evt *Event) error {
 
 	path := args[0]
 
+	// Only interested in directories.
 	if fi, err := os.Lstat(path); err != nil || fi.IsDir() == false {
 		return err
 	}
 
 	var mount string
 
-	if ctx.Current.NamespaceId(task.MountNs) > 0 {
+	if ctx.Current.NamespaceID(task.MountNs) > 0 {
 		mount, err = mountNamespace(ctx.Current, path)
 		if err != nil || mount == "" {
 			return err

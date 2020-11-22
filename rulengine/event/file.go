@@ -28,6 +28,8 @@ import (
 	"golang.org/x/sys/unix"
 )
 
+const maxRecursion = 5
+
 // ProcessOpen Processes incoming OPEN events for a given task.
 // It currently only supports write attempts to monitored files.
 func (ctx *Context) ProcessOpen(evt *Event) error {
@@ -49,7 +51,7 @@ func (ctx *Context) ProcessOpen(evt *Event) error {
 		return err
 	}
 
-	file, err := getAbsFilePath(ctx.Current, args[0])
+	file, err := absFilePath(ctx.Current, args[0])
 	if err != nil {
 		return err
 	}
@@ -120,7 +122,7 @@ func (ctx *Context) ProcessUnlink(evt *Event) (string, error) {
 		return "", nil
 	}
 
-	file, err := getAbsFilePath(ctx.Current, evt.Args.([]string)[0])
+	file, err := absFilePath(ctx.Current, evt.Args.([]string)[0])
 	if err != nil {
 		return "", err
 	}
@@ -157,7 +159,7 @@ func (ctx *Context) ProcessRename(evt *Event) (*elf.Elf, error) {
 		return nil, nil
 	}
 
-	old, err := getAbsFilePath(ctx.Current, args[0])
+	old, err := absFilePath(ctx.Current, args[0])
 	if err != nil {
 		return nil, err
 	}
@@ -171,7 +173,7 @@ func (ctx *Context) ProcessRename(evt *Event) (*elf.Elf, error) {
 		}
 	}
 
-	new, err := getAbsFilePath(ctx.Current, args[1])
+	new, err := absFilePath(ctx.Current, args[1])
 	if err != nil {
 		return nil, err
 	}
@@ -202,7 +204,7 @@ func (ctx *Context) ProcessChdir(evt *Event) error {
 		return nil
 	}
 
-	cwd, err := getAbsDirPath(ctx.Current, evt.Args.([]string)[0])
+	cwd, err := absDirPath(ctx.Current, evt.Args.([]string)[0])
 	if err != nil {
 		return err
 	}
@@ -211,9 +213,9 @@ func (ctx *Context) ProcessChdir(evt *Event) error {
 	return nil
 }
 
-// getAbsFilePath returns a valid and absolute path for the given file.
-// Note: it follows symbolic links.
-func getAbsFilePath(current *task.Task, file string) (string, error) {
+// absFilePath returns a valid and absolute path for the given file.
+// Note: it follows symbolic links and its aware of mount namespaces.
+func absFilePath(current *task.Task, file string) (string, error) {
 	cwd := current.GetCwd()
 	ns, _ := current.NamespaceData(task.MountNs)
 
@@ -242,9 +244,9 @@ func getAbsFilePath(current *task.Task, file string) (string, error) {
 	return file, nil
 }
 
-// getAbsDirPath returns a valid and absolute path for the given directory.
-// Note: it follows symbolic links.
-func getAbsDirPath(current *task.Task, dir string) (string, error) {
+// absDirPath returns a valid and absolute path for the given directory.
+// Note: it follows symbolic links and its aware of mount namespaces.
+func absDirPath(current *task.Task, dir string) (string, error) {
 	cwd := current.GetCwd()
 	ns, _ := current.NamespaceData(task.MountNs)
 
@@ -280,7 +282,9 @@ func followSymlinks(path, mount string) (string, error) {
 		}
 
 	} else {
-		for i := 0; i < 5 && prev != path; i++ {
+		// Follow symlinks manually only when the process
+		// lives in a mount namespace.
+		for i := 0; i < maxRecursion && prev != path; i++ {
 			prev = path
 			tmp, _ := os.Readlink(path)
 			if tmp != "" && strings.HasPrefix(tmp, mount) == false {
@@ -292,7 +296,8 @@ func followSymlinks(path, mount string) (string, error) {
 	return path, nil
 }
 
-func cleanPath(path string, current *task.Task) string {
+// basePath removes the mount-point from the given path.
+func basePath(current *task.Task, path string) string {
 	mount, err := current.NamespaceData(task.MountNs)
 	if mount == "" || err != nil {
 		return path

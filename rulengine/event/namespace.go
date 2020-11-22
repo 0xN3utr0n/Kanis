@@ -23,6 +23,7 @@ import (
 )
 
 // ProcessSetHostname Processes incoming SETHOSTNAME events for a given task.
+// Only useful if the task is in a UTS namespace.
 func (ctx *Context) ProcessSetHostname(evt *Event) error {
 	r, err := strconv.Atoi(evt.RetValue[0])
 	if err != nil {
@@ -34,7 +35,7 @@ func (ctx *Context) ProcessSetHostname(evt *Event) error {
 
 	args := evt.Args.([]string)
 
-	if ctx.Current.NamespaceId(task.UtsNs) == 0 { // Not inside a namespace
+	if ctx.Current.NamespaceID(task.UtsNs) == 0 { // Not inside a namespace
 		return nil
 	}
 
@@ -46,7 +47,7 @@ func (ctx *Context) ProcessSetHostname(evt *Event) error {
 }
 
 // ProcessUnshare Processes incoming UNSHARE events for a given task.
-// Used to detect the creation of new PID Namespaces.
+// Used to detect the creation of new Namespaces.
 func (ctx *Context) ProcessUnshare(evt *Event) error {
 	r, err := strconv.Atoi(evt.RetValue[0])
 	if err != nil {
@@ -72,7 +73,9 @@ func (ctx *Context) ProcessUnshare(evt *Event) error {
 	return nil
 }
 
-func (ctx *Context) ProcessNs(evt *Event) error {
+// ProcessSetNs Processes incoming SetNS events for a given task.
+// Useless event right now.
+func (ctx *Context) ProcessSetNs(evt *Event) error {
 	r, err := strconv.Atoi(evt.RetValue[0])
 	if err != nil {
 		return err
@@ -89,7 +92,7 @@ func (ctx *Context) ProcessNs(evt *Event) error {
 
 	// TODO: Throught the task's FDs (database)
 	// get the corresponding namespace path (/proc/<pid>/ns) and retrieve the
-	// target process PID (which has a valid container id).
+	// target process PID (which has a valid namespace id).
 
 	ctx.Current.SetFlags(ctx.Current.GetFlags() | flags)
 	return nil

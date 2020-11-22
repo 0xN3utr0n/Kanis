@@ -76,7 +76,7 @@ func logExit(arg string, ctx *Context) {
 
 func logExecve(ctx *Context, newArgv []string) {
 	if monitor != nil {
-		cp := []string{cleanPath(newArgv[0], ctx.Current)}
+		cp := []string{basePath(ctx.Current, newArgv[0])}
 		log := monitor.Info("RuleEngine").
 			Strs("Argv", append(cp, newArgv[1:]...)).
 			Str("Type", "Event")
@@ -108,7 +108,7 @@ func logSigaction(signal string, ctx *Context) {
 func logOpen(path string, ctx *Context) {
 	if monitor != nil {
 		log := monitor.Info("RuleEngine").
-			Str("File", cleanPath(path, ctx.Current)).
+			Str("File", basePath(ctx.Current, path)).
 			Str("Type", "Event")
 
 		Send("OPEN", ctx.PID, "", ctx.Current, log)
@@ -118,7 +118,7 @@ func logOpen(path string, ctx *Context) {
 func logClose(path string, ctx *Context) {
 	if monitor != nil {
 		log := monitor.Info("RuleEngine").
-			Str("File", cleanPath(path, ctx.Current)).
+			Str("File", basePath(ctx.Current, path)).
 			Str("Type", "Event")
 
 		Send("CLOSE", ctx.PID, "", ctx.Current, log)
@@ -128,7 +128,7 @@ func logClose(path string, ctx *Context) {
 func logUnlink(path string, ctx *Context) {
 	if monitor != nil {
 		log := monitor.Info("RuleEngine").
-			Str("File", cleanPath(path, ctx.Current)).
+			Str("File", basePath(ctx.Current, path)).
 			Str("Type", "Event")
 
 		Send("UNLINK", ctx.PID, "", ctx.Current, log)
@@ -138,8 +138,8 @@ func logUnlink(path string, ctx *Context) {
 func logRename(src, dst string, ctx *Context) {
 	if monitor != nil {
 		log := monitor.Info("RuleEngine").
-			Str("Old", cleanPath(src, ctx.Current)).
-			Str("New", cleanPath(dst, ctx.Current)).
+			Str("Old", basePath(ctx.Current, src)).
+			Str("New", basePath(ctx.Current, dst)).
 			Str("Type", "Event")
 
 		Send("RENAME", ctx.PID, "", ctx.Current, log)
@@ -201,7 +201,7 @@ func Send(event string, pid int, msg string, current *task.Task, log *zerolog.Ev
 	creds := current.GetCreds()
 
 	log.Dict("Current", zerolog.Dict().
-		Str("Comm", cleanPath(current.GetComm(), current)).
+		Str("Comm", basePath(current, current.GetComm())).
 		Int("Pid", pid).
 		Int("VPid", current.GetVPid()).
 		Str("Task", typeTask).
