@@ -1,4 +1,6 @@
 # Kanis
+[![Go Report Card](https://goreportcard.com/badge/github.com/0xN3utr0n/Kanis)](https://goreportcard.com/report/github.com/0xN3utr0n/Kanis)
+
 Kanis is an advanced threat detection solution exclusively designed for Linux with performance and simplicity in mind. Runs locally "out-of-the-box" (even on ancient systems) along with a powerful engine, mainly based on heuristic and behavioral analysis, for event and anomaly correlation.
 
 ### Features

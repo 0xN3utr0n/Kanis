@@ -90,7 +90,7 @@ func (ctx *Context) ProcessSetNs(evt *Event) error {
 		return err
 	}
 
-	// TODO: Throught the task's FDs (database)
+	// TODO: Thought the task's FDs (database)
 	// get the corresponding namespace path (/proc/<pid>/ns) and retrieve the
 	// target process PID (which has a valid namespace id).
 
