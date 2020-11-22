@@ -87,7 +87,7 @@ func (grp *Group) detectTwoWayTracing() {
 func (grp *Group) detectSigTrapHandler(signal unix.Signal) {
 	defer grp.wg.Done()
 
-	// Careful, there're some legitmate uses for this signal.
+	// Careful, there're some legitimate uses for this signal.
 	if signal != unix.SIGTRAP || grp.ctx.Current.GetScore() == benign {
 		return
 	}
