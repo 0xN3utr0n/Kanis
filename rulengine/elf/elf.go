@@ -24,6 +24,7 @@ import (
 	"sync"
 
 	"github.com/0xN3utr0n/Kanis/rulengine/database"
+	"github.com/0xN3utr0n/Kanis/scanner"
 )
 
 type Elf struct {
@@ -50,15 +51,15 @@ func New(path string) (*Elf, error) {
 
 	bin := new(Elf)
 	bin.Rpath = path
-	file := fstat{path: path}
+	file := scanner.Fstat{Path: path}
 
 	var err error
 
-	if file.scanElf() == false {
+	if file.ScanElf() == false {
 		return nil, errors.New("Invalid ELF file: " + path)
 	}
 
-	if err = storeExecInformation(file); err != nil {
+	if err = scanner.StoreExecInformation(file); err != nil {
 		return nil, err
 	}
 
@@ -129,20 +130,4 @@ func (bin *Elf) UpdateScore(score int) {
 		database.UpdateExecutableDanger(bin.Rpath, score)
 	}
 	bin.mutex.Unlock()
-}
-
-// CheckElfMagic Reads the file's magic bytes in order to find out if it's an ELF.
-func CheckElfMagic(Fd *os.File) bool {
-	var header [4]byte
-
-	_, err := io.ReadFull(Fd, header[:])
-	if err != nil {
-		return false
-	}
-
-	if header != [4]byte{0x7f, 0x45, 0x4c, 0x46} {
-		return false
-	}
-
-	return true
 }

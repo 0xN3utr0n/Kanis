@@ -37,13 +37,13 @@ func (grp *Group) detectUnexpectedTracer(tracee *task.Tracee) {
 
 	if tracee.Last == unix.PTRACE_TRACEME {
 		ppid := strconv.Itoa(grp.ctx.Current.GetPPid())
-		logThreat("Traceme Protection", low, ppid, grp)
+		logThreat("Traceme Protection", low, ppid, nil, grp)
 		grp.ctx.Current.UpdateScore(low)
 		return
 	}
 
 	if tracee.Last == unix.PTRACE_POKETEXT && tracee.Pid == grp.ctx.PID {
-		logThreat("Self-Tracing Protection", low, strconv.Itoa(grp.ctx.PID), grp)
+		logThreat("Self-Tracing Protection", low, strconv.Itoa(grp.ctx.PID), nil, grp)
 		grp.ctx.Current.UpdateScore(low)
 		return
 	}
@@ -61,7 +61,7 @@ func (grp *Group) detectProcessInjection(tracee *task.Tracee) {
 		return
 	}
 
-	logThreat("Process Injection", moderate, strconv.Itoa(tracee.Pid), grp)
+	logThreat("Process Injection", moderate, strconv.Itoa(tracee.Pid), nil, grp)
 	grp.ctx.Current.UpdateScore(moderate)
 	target.UpdateScore(moderate)
 }
@@ -79,7 +79,7 @@ func (grp *Group) detectTwoWayTracing() {
 	}
 
 	pid := strconv.Itoa(grp.ctx.Current.GetTracer())
-	logThreat("Two-Way-Tracing Protection", low, pid, grp)
+	logThreat("Two-Way-Tracing Protection", low, pid, nil, grp)
 	grp.ctx.Current.UpdateScore(low)
 	tracer.UpdateScore(low)
 }
@@ -92,7 +92,7 @@ func (grp *Group) detectSigTrapHandler(signal unix.Signal) {
 		return
 	}
 
-	logThreat("SIGTRAP-Handler Protection", low, "", grp)
+	logThreat("SIGTRAP-Handler Protection", low, "", nil, grp)
 	grp.ctx.Current.UpdateScore(low)
 }
 
@@ -109,7 +109,7 @@ func (grp *Group) detectBinaryPacking(bin *elf.Elf) {
 		return
 	}
 
-	logThreat("Software Packing", moderate, bin.Rpath, grp)
+	logThreat("Software Packing", moderate, bin.Rpath, nil, grp)
 	grp.ctx.Current.UpdateScore(moderate)
 	bin.UpdateScore(elf.Dangerous)
 }
@@ -126,7 +126,7 @@ func (grp *Group) detectBinaryParasite(bin *elf.Elf) {
 
 	for _, a := range addrs {
 		if bin.DetectControlFlowHijacking(a) == true {
-			logThreat("Execution Flow Hijacking", moderate, bin.Rpath, grp)
+			logThreat("Execution Flow Hijacking", moderate, bin.Rpath, nil, grp)
 			grp.ctx.Current.UpdateScore(moderate)
 			bin.UpdateScore(elf.Dangerous)
 			return
@@ -144,7 +144,7 @@ func (grp *Group) detectMasquerading(bin *elf.Elf) {
 
 	// For instance: '[mymalware]'
 	if file[0] == '[' && grp.ctx.Current.GetPPid() != 2 {
-		logThreat("Kernel Thread Masquerading", low, bin.Rpath, grp)
+		logThreat("Kernel Thread Masquerading", low, bin.Rpath, nil, grp)
 		grp.ctx.Current.UpdateScore(low)
 		bin.UpdateScore(elf.Dangerous)
 		return
@@ -153,7 +153,7 @@ func (grp *Group) detectMasquerading(bin *elf.Elf) {
 	// For instance: 'mymalware.txt '
 	ext, ok := elf.ValidExtension(file)
 	if size := len(ext); ok == false && ext[size-1] == ' ' {
-		logThreat("Space After Filename Masquerading", low, bin.Rpath, grp)
+		logThreat("Space After Filename Masquerading", low, bin.Rpath, nil, grp)
 		grp.ctx.Current.UpdateScore(low)
 		bin.UpdateScore(elf.Dangerous)
 		return
@@ -183,7 +183,7 @@ func (grp *Group) detectExecutableDeletion(path string) {
 	}
 
 	if ok == true {
-		logThreat("Executable Deletion", low, path, grp)
+		logThreat("Executable Deletion", low, path, nil, grp)
 		grp.ctx.Current.UpdateScore(low)
 	}
 }

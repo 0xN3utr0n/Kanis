@@ -3,6 +3,7 @@ package threat
 import (
 	"github.com/0xN3utr0n/Kanis/logger"
 	"github.com/0xN3utr0n/Kanis/rulengine/event"
+	"github.com/0xN3utr0n/Kanis/scanner"
 	"github.com/rs/zerolog"
 )
 
@@ -24,7 +25,7 @@ func EnableMonitoring(stdout bool) error {
 	return nil
 }
 
-func logThreat(technique string, level int, ioc string, grp *Group) {
+func logThreat(technique string, level int, ioc string, match *scanner.YaraRule, grp *Group) {
 	log := monitor.Info("RuleEngine").Str("Type", "Threat").
 		Dict("Threat", zerolog.Dict().
 			Int("Level", level).
@@ -37,6 +38,13 @@ func logThreat(technique string, level int, ioc string, grp *Group) {
 		log.Dict("IOC", zerolog.Dict().
 			Str("Type", threats[technique].ioc).
 			Str("Value", ioc))
+	}
+
+	if match != nil {
+		// If the threat was detected using Yara
+		log.Dict("Yara", zerolog.Dict().
+			Str("Rule", match.Rule).
+			Str("Description", match.Description))
 	}
 
 	event.Send("", grp.ctx.PID, "", grp.ctx.Current, log)

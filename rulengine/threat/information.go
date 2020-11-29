@@ -61,4 +61,8 @@ var threats = map[string]information{
 		description: "Anti-debugging technique in which the malicious process sets up a signal handler to catch SIGTRAP signals issued by breakpoint instructions.",
 		ioc:         "None",
 	},
+	"Malware": {
+		description: "Malicious software can include payloads, droppers, post-compromise tools, backdoors, packers, and C2 protocols.",
+		ioc:         "Executable File",
+	},
 }

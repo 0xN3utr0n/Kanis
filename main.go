@@ -23,7 +23,7 @@ import (
 	"github.com/0xN3utr0n/Kanis/logger"
 	"github.com/0xN3utr0n/Kanis/rulengine"
 	"github.com/0xN3utr0n/Kanis/rulengine/database"
-	"github.com/0xN3utr0n/Kanis/rulengine/elf"
+	"github.com/0xN3utr0n/Kanis/scanner"
 )
 
 func main() {
@@ -43,7 +43,7 @@ func main() {
 		log.FatalS(err, "None")
 	}
 
-	elf.ScanSystem(log)
+	scanner.System(log)
 
 	myftrace := ftrace.New(log)
 	ruleChan := myftrace.Init()

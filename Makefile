@@ -34,7 +34,7 @@ build_test:
 	@go test -o $(BINTEST) -tags integration -c rulengine/threat/threats_test.go
 
 install:
-	@mkdir -p $(PREFIX)/files
+	@mkdir -p $(PREFIX)/files $(PREFIX)/rules
 
 clean: clean_test
 	@rm -rf $(BINPATH)/*

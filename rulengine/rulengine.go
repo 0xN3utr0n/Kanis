@@ -23,6 +23,7 @@ import (
 	"github.com/0xN3utr0n/Kanis/rulengine/event"
 	"github.com/0xN3utr0n/Kanis/rulengine/task"
 	"github.com/0xN3utr0n/Kanis/rulengine/threat"
+	"github.com/0xN3utr0n/Kanis/scanner"
 )
 
 const (
@@ -52,6 +53,10 @@ func Run(RuleIn <-chan *event.Event, main *logger.Logger, showEvents bool, stdou
 		log.FatalS(err, "RuleEngine")
 	}
 
+	if err := scanner.StartYara(); err != nil {
+		log.FatalS(err, "RuleEngine")
+	}
+
 	tasks := task.NewList(baseNumTasks)
 
 	// TODO: add a worker pool
@@ -78,6 +83,7 @@ func worker(RuleIn <-chan *event.Event, tasks *task.List) {
 			if analyse, err := ctx.ProcessExecve(evt); err != nil {
 				ctx.Error(evt.Function, err)
 			} else if analyse == true {
+				threat.YaraAnalysis(ctx)
 				threat.ExecveAnalysis(ctx)
 			}
 
@@ -85,6 +91,7 @@ func worker(RuleIn <-chan *event.Event, tasks *task.List) {
 			if analyse, err := ctx.ProcessSchedExecve(evt); err != nil {
 				ctx.Error(evt.Function, err)
 			} else if analyse == true {
+				threat.YaraAnalysis(ctx)
 				threat.ExecveAnalysis(ctx)
 			}
 

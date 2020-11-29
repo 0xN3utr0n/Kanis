@@ -19,6 +19,7 @@ import (
 	"sync"
 
 	"github.com/0xN3utr0n/Kanis/rulengine/event"
+	"github.com/0xN3utr0n/Kanis/scanner"
 
 	"github.com/0xN3utr0n/Kanis/rulengine/elf"
 	"github.com/0xN3utr0n/Kanis/rulengine/task"
@@ -87,4 +88,28 @@ func UnlinkAnalysis(path string, ctx *event.Context) {
 	grp.wg.Add(1)
 	grp.detectExecutableDeletion(path)
 	grp.wg.Wait()
+}
+
+func YaraAnalysis(ctx *event.Context) {
+	in, out, noRules := scanner.ConnectToYara()
+	if noRules == true {
+		return
+	}
+
+	grp := Group{"Execution", ctx, nil}
+	bin := ctx.Current.GetElf()
+
+	in <- bin.Tpath
+	matches := <-out
+
+	if len(matches) == 0 {
+		return
+	}
+
+	for _, m := range matches {
+		logThreat("Malware", high, bin.Rpath, &m, &grp)
+	}
+
+	grp.ctx.Current.UpdateScore(high)
+	bin.UpdateScore(elf.Dangerous)
 }
