@@ -20,7 +20,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/Velocidex/go-yara"
+	"github.com/0xN3utr0n/go-yara"
 )
 
 var (
