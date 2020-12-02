@@ -30,8 +30,11 @@ var (
 	filesIn  chan string
 	rulesOut chan []YaraRule
 	noRules  = true
+	yaraDir  = "/var/kanis/rules"
 )
 
+// YaraRule basic structure that holds information about
+// a matched rule.
 type YaraRule struct {
 	Rule        string
 	Description string
@@ -44,20 +47,21 @@ func scanYara() error {
 		return err
 	}
 
-	scan([]string{"/var/kanis/rules"})
+	scan([]string{yaraDir}, scanYaraRule)
 
 	return nil
 }
 
-func (file *Fstat) scanYaraRule() (bool, error) {
+func scanYaraRule(file *Fstat) error {
+	// Only yara rules with valid extensions will be allowed.
 	if !strings.HasSuffix(file.Path, ".yara") &&
 		!strings.HasSuffix(file.Path, ".yar") {
-		return false, nil
+		return nil
 	}
 
 	fd, err := os.Open(file.Path)
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	defer fd.Close()
@@ -69,14 +73,14 @@ func (file *Fstat) scanYaraRule() (bool, error) {
 		// The compiler becomes unusable if AddFile() fails.
 		// The only workaround is to create a new one.
 		newYaraCompiler()
-		return false, err
+		return err
 	}
 
 	if noRules == true {
 		noRules = false
 	}
 
-	return true, nil
+	return nil
 }
 
 func newYaraCompiler() error {
@@ -94,6 +98,7 @@ func newYaraCompiler() error {
 	return nil
 }
 
+// StartYara starts a Yara on-demand scanner.
 func StartYara() error {
 	var err error
 
@@ -107,8 +112,8 @@ func StartYara() error {
 		return err
 	}
 
-	filesIn = make(chan string, 1)
-	rulesOut = make(chan []YaraRule, 1)
+	filesIn = make(chan string, 1)      // Files which are going to be scanned.
+	rulesOut = make(chan []YaraRule, 1) // Results of the scans.
 
 	go func() {
 		defer close(filesIn)
@@ -126,6 +131,7 @@ func StartYara() error {
 	return nil
 }
 
+// parseRule retrieves and normalizes the rule's data.
 func parseRule(rules []yara.MatchRule) []YaraRule {
 	matches := make([]YaraRule, len(rules))
 
@@ -142,6 +148,8 @@ func parseRule(rules []yara.MatchRule) []YaraRule {
 	return matches
 }
 
+// ConnectToYara returns the necessary channels for an effective
+// communication with the on-demand scanner.
 func ConnectToYara() (chan string, chan []YaraRule, bool) {
 	return filesIn, rulesOut, noRules
 }

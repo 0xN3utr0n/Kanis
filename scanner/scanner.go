@@ -31,12 +31,16 @@ var (
 	log *logger.Logger
 )
 
-// System scans for critical files within the specified directories.
-func System(main *logger.Logger) {
+type fileScanner func(file *Fstat) error
+
+// NewSnapshot takes a file system snapshot.
+// It scans for executables, binaries, and even Yara Rules.
+func NewSnapshot(main *logger.Logger) {
 	log = main
 
 	log.InfoS("Taking system snapshot", "Sys-Scan")
 
+	// TODO: Implement a proper interface. This is a bit lame.
 	if err := scanExecutables(); err != nil {
 		log.ErrorS(err, "Sys-Scan")
 	}
@@ -47,7 +51,8 @@ func System(main *logger.Logger) {
 	log.InfoS("Snapshot completed", "Sys-Scan")
 }
 
-func scan(paths []string) {
+// scan is a generic multithreaded FS scanner.
+func scan(paths []string, callback fileScanner) {
 	files := make(chan Fstat, 200)
 
 	for _, p := range paths {
@@ -58,7 +63,7 @@ func scan(paths []string) {
 
 	for i := 0; i < (runtime.NumCPU() * 2); i++ {
 		wg2.Add(1)
-		go scanFile(files)
+		go scanFile(files, callback)
 	}
 
 	wg.Wait()
@@ -86,22 +91,11 @@ func scanDir(p string, files chan Fstat) {
 }
 
 // scanFile (worker)
-func scanFile(files chan Fstat) {
+func scanFile(files chan Fstat, callback fileScanner) {
 	defer wg2.Done()
 
-	var (
-		err error
-		ok  bool
-	)
-
 	for f := range files {
-		if ok = f.ScanElf(); ok == true {
-			err = StoreExecInformation(f)
-		} else if ok, err = f.scanYaraRule(); ok == true {
-			continue
-		}
-
-		if err != nil {
+		if err := callback(&f); err != nil {
 			log.ErrorS(fmt.Errorf("%s - %s", f.Path, err), "Sys-Scan")
 		}
 	}

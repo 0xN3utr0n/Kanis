@@ -55,11 +55,7 @@ func New(path string) (*Elf, error) {
 
 	var err error
 
-	if file.ScanElf() == false {
-		return nil, errors.New("Invalid ELF file: " + path)
-	}
-
-	if err = scanner.StoreExecInformation(file); err != nil {
+	if err = scanner.ScanElf(&file); err != nil {
 		return nil, err
 	}
 

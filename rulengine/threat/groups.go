@@ -106,6 +106,7 @@ func YaraAnalysis(ctx *event.Context) {
 		return
 	}
 
+	// Create an alert for each found rule.
 	for _, m := range matches {
 		logThreat("Malware", high, bin.Rpath, &m, &grp)
 	}

@@ -1,8 +1,8 @@
 CC=gcc
 
-.PHONY: all sample2 sample3 sample4 sample5
+.PHONY: all sample2 sample3 sample4 sample5 sample6
 
-all: sample2 sample3 sample4 sample5
+all: sample2 sample3 sample4 sample5 sample6
 
 sample2:
 	@mkdir $@ &>/dev/null
@@ -18,6 +18,9 @@ sample4: sample4/sample4.c
 sample5: sample5/sample5.c
 	@$(CC) -static -o $@/$@.bin $^
 	@upx -9 $@/$@.bin 1>/dev/null
+
+sample6: sample6/sample6.c
+	@$(CC) -o $@/$@.bin $^
 
 clean:
 	@find . -type f -name "*.bin" -delete 

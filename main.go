@@ -43,10 +43,9 @@ func main() {
 		log.FatalS(err, "None")
 	}
 
-	scanner.System(log)
+	scanner.NewSnapshot(log)
 
-	myftrace := ftrace.New(log)
-	ruleChan := myftrace.Init()
+	ruleChan := ftrace.New(log).Init()
 
 	rulengine.Run(ruleChan, log, *showEvents, *stdout)
 }

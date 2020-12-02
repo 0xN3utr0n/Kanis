@@ -26,8 +26,7 @@ import (
 	"github.com/0xN3utr0n/Kanis/rulengine/database"
 )
 
-var update bool
-
+// Fstat contains basic information about the file being scanned.
 type Fstat struct {
 	Path  string
 	info  os.FileInfo
@@ -43,71 +42,66 @@ func scanExecutables() error {
 		return err
 	}
 
-	scan([]string{"/usr/bin", "/usr/sbin", "/bin", "/sbin", "/usr/local"})
+	scan([]string{"/usr/bin", "/usr/sbin", "/bin", "/sbin", "/usr/local"}, ScanElf)
 
 	return nil
 }
 
-// scanElf Checks whether the given filepath points to a valid ELF file.
-// In addition, it retrieves some basic information about it.
-func (file *Fstat) ScanElf() bool {
+// ScanElf Checks whether the given filepath points to a valid ELF file.
+// In success, the file's metadata is stored in the database.
+func ScanElf(file *Fstat) error {
 	var err error
 
 	// Follow symbolic-links
 	file.Path, err = filepath.EvalSymlinks(file.Path)
 	if err != nil {
-		log.ErrorS(err, "Sys-Scan")
-		return false
+		return err
 	}
 
 	fd, err := os.Open(file.Path)
 	if err != nil {
-		log.ErrorS(err, "Sys-Scan")
-		return false
+		return err
 	}
 
 	defer fd.Close()
 
 	if checkElfMagic(fd) == false {
-		return false
+		return nil
 	}
 
 	// Get file's hash
 	h := sha256.New()
 	if _, err := io.Copy(h, fd); err != nil {
-		log.ErrorS(err, "Sys-Scan")
-		return false
+		return err
 	}
 
 	file.hash = fmt.Sprintf("%x", h.Sum(nil))
 
-	if file.setInodeDev() == false {
-		log.ErrorS(err, "Sys-Scan")
-		return false
+	if err := file.setInodeDev(); err != nil {
+		return err
 	}
 
-	return true
+	if err := StoreExecInformation(*file); err != nil {
+		return err
+	}
+
+	return nil
 }
 
-// setInodeDev Get a file's inode and device id
-func (file *Fstat) setInodeDev() bool {
+// setInodeDev Gets a file's inode and device id.
+func (file *Fstat) setInodeDev() error {
 	var err error
 
 	file.info, err = os.Lstat(file.Path)
 	if err != nil {
-		log.ErrorS(err, "Sys-Scan")
-		return false
+		return err
 	}
 
-	s, ok := file.info.Sys().(*syscall.Stat_t)
-	if !ok {
-		return false
-	}
-
+	s, _ := file.info.Sys().(*syscall.Stat_t)
 	file.inode = uint64(s.Ino)
 	file.dev = uint64(s.Dev)
 
-	return true
+	return nil
 }
 
 // CheckElfMagic Reads the file's magic bytes in order to find out if it's an ELF.
@@ -126,6 +120,7 @@ func checkElfMagic(Fd *os.File) bool {
 	return true
 }
 
+// StoreExecInformation stores the metadata of an ELF file in the database.
 func StoreExecInformation(file Fstat) error {
 	exists, err := database.ExistsExecutable(file.Path)
 	if err != nil {
