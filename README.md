@@ -11,6 +11,7 @@ Kanis is an advanced threat detection solution exclusively designed for Linux wi
 - ELF anti-debugging techniques detection.
 - Process injection detection.
 - Rootkits detection (_In progress_).
+- Yara integration.
 - And much more... :)
 
 ### How it works
@@ -22,6 +23,7 @@ Additionally, Kanis includes some modules for static heuristic analysis (such as
 ```
 - Linux >=3.10 x86_64
 - Kernel compiled with CONFIG_FUNCTION_TRACER flag
+- Openssl (libssl-dev)
 - go >=1.14
 ```
 ### Install
