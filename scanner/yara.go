@@ -16,6 +16,7 @@
 package scanner
 
 import (
+	"fmt"
 	"os"
 	"strings"
 	"sync"
@@ -41,7 +42,7 @@ type YaraRule struct {
 }
 
 func scanYara() error {
-	log.InfoS("Scanning Yara Rules", "Sys-Scan")
+	log.InfoS("Scanning Yara Rules", "Scanner")
 
 	if err := newYaraCompiler(); err != nil {
 		return err
@@ -103,7 +104,7 @@ func StartYara() error {
 	var err error
 
 	if noRules == true {
-		log.InfoS("Yara Disabled - No Rules Loaded", "Sys-Scan")
+		log.InfoS("Yara Disabled - No Rules Loaded", "Scanner")
 		return nil
 	}
 
@@ -118,11 +119,12 @@ func StartYara() error {
 	go func() {
 		defer close(filesIn)
 		defer close(rulesOut)
+		defer yara.Finalize()
 
 		for f := range filesIn {
 			r, err := rules.ScanFile(f, 0, 0)
 			if err != nil {
-				log.ErrorS(err, "Sys-Scan")
+				log.ErrorS(fmt.Errorf("Yara: %v", err), "Scanner")
 			}
 			rulesOut <- parseRule(r)
 		}
@@ -133,16 +135,17 @@ func StartYara() error {
 
 // parseRule retrieves and normalizes the rule's data.
 func parseRule(rules []yara.MatchRule) []YaraRule {
+	var description string
+
 	matches := make([]YaraRule, len(rules))
 
 	for i, rule := range rules {
-		description := "Unknown"
-		for d, m := range rule.Meta {
-			if d == "description" {
-				description = m.(string)
-			}
+		if rule.Meta["description"] != nil {
+			description = strings.Replace(rule.Meta["description"].(string), "", "", 0)
+		} else {
+			description = "Unknown"
 		}
-		matches[i] = YaraRule{rule.Rule, description}
+		matches[i] = YaraRule{strings.Replace(rule.Rule, "", "", 0), description}
 	}
 
 	return matches

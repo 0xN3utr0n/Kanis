@@ -36,7 +36,7 @@ type Fstat struct {
 }
 
 func scanExecutables() error {
-	log.InfoS("Scanning ELF binaries", "Sys-Scan")
+	log.InfoS("Scanning ELF binaries", "Scanner")
 
 	if err := database.CreateExecutableTable(); err != nil {
 		return err

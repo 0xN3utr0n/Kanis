@@ -38,17 +38,17 @@ type fileScanner func(file *Fstat) error
 func NewSnapshot(main *logger.Logger) {
 	log = main
 
-	log.InfoS("Taking system snapshot", "Sys-Scan")
+	log.InfoS("Taking system snapshot", "Scanner")
 
 	// TODO: Implement a proper interface. This is a bit lame.
 	if err := scanExecutables(); err != nil {
-		log.ErrorS(err, "Sys-Scan")
+		log.ErrorS(err, "Scanner")
 	}
 	if err := scanYara(); err != nil {
-		log.ErrorS(err, "Sys-Scan")
+		log.ErrorS(err, "Scanner")
 	}
 
-	log.InfoS("Snapshot completed", "Sys-Scan")
+	log.InfoS("Snapshot completed", "Scanner")
 }
 
 // scan is a generic multithreaded FS scanner.
@@ -56,7 +56,7 @@ func scan(paths []string, callback fileScanner) {
 	files := make(chan Fstat, 200)
 
 	for _, p := range paths {
-		log.DebugS("Scanning directory: "+p, "Sys-Scan")
+		log.DebugS("Scanning directory: "+p, "Scanner")
 		wg.Add(1)
 		go scanDir(p, files)
 	}
@@ -86,7 +86,7 @@ func scanDir(p string, files chan Fstat) {
 			return nil
 		})
 	if err != nil {
-		log.ErrorS(err, "Sys-Scan")
+		log.ErrorS(err, "Scanner")
 	}
 }
 
@@ -96,7 +96,7 @@ func scanFile(files chan Fstat, callback fileScanner) {
 
 	for f := range files {
 		if err := callback(&f); err != nil {
-			log.ErrorS(fmt.Errorf("%s - %s", f.Path, err), "Sys-Scan")
+			log.ErrorS(fmt.Errorf("%s - %s", f.Path, err), "Scanner")
 		}
 	}
 }
