@@ -26,10 +26,18 @@ import (
 	"github.com/0xN3utr0n/Kanis/scanner"
 )
 
+var catflags = "Enable kernel events monitoring.\n" +
+	"Supported categories:\n" +
+	"a ALL events.\nx EXEC events.\n" +
+	"m MOUNT events.\ns SIGNAL events.\n" +
+	"t TASK events.\np PTRACE events.\n" +
+	"f FILE events.\nn NAMESPACE events.\n" +
+	"\ne.g. -e=x:t:n\n"
+
 func main() {
-	showEvents := flag.String("e", "", "Enable kernel events monitoring (very verbose).")
 	debug := flag.Bool("d", false, "Show debug messages (very verbose).")
 	stdout := flag.Bool("s", false, "Redirect all output to stdout.")
+	showEvents := flag.String("e", "", catflags)
 
 	flag.Parse()
 

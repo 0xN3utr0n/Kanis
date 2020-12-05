@@ -35,7 +35,7 @@ const (
 )
 
 // Rule is a generic structure that contains the needed information
-// in order to parse/process an specific event.
+// required to parse/process an specific event.
 type Rule struct {
 	// Type of event
 	Category     rune
@@ -49,7 +49,7 @@ type Rule struct {
 
 func checkRuleMonitoring(rules Rules, categories string) error {
 	// categories are indicated by the -e option
-	// with the following format: -e=t:x:m
+	// using the following format: -e=t:x:m
 	parsed := strings.Split(categories, ":")
 
 	for _, s := range parsed {

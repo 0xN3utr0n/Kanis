@@ -38,7 +38,20 @@ Kanis requires root privileges in order to properly work.
 ```
   -h	This help.
   -d	Show debug messages (very verbose).
-  -e	Enable kernel events monitoring (very verbose).
+  -e string
+    	Enable kernel events monitoring.
+    	Supported categories:
+    	a ALL events.
+    	x EXEC events.
+    	m MOUNT events.
+    	s SIGNAL events.
+    	t TASK events.
+    	p PTRACE events.
+    	f FILE events.
+    	n NAMESPACE events.
+    	
+    	e.g. -e=x:t:n
+    	
   -s	Redirect all output to stdout.
 ```
 Once executed, the following log files will be created (within `/var/kanis/`):
