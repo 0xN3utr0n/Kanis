@@ -27,9 +27,10 @@ import (
 )
 
 func main() {
-	showEvents := flag.Bool("e", false, "Enable kernel events monitoring (very verbose).")
+	showEvents := flag.String("e", "", "Enable kernel events monitoring (very verbose).")
 	debug := flag.Bool("d", false, "Show debug messages (very verbose).")
 	stdout := flag.Bool("s", false, "Redirect all output to stdout.")
+
 	flag.Parse()
 
 	logger.SetDebug(*debug)

@@ -34,10 +34,13 @@ var (
 	log *logger.Logger
 )
 
-func Run(RuleIn <-chan *event.Event, main *logger.Logger, showEvents bool, stdout bool) {
+// Run launches the Rule Engine.
+func Run(RuleIn <-chan *event.Event, main *logger.Logger, showEvents string, stdout bool) {
 	log = main
 
-	if err := event.EnableMonitoring(showEvents, stdout); err != nil {
+	rules := selectRules("ftrace")
+
+	if err := event.EnableMonitoring(showEvents, stdout, rules); err != nil {
 		log.FatalS(err, "RuleEngine")
 	}
 
@@ -60,11 +63,10 @@ func Run(RuleIn <-chan *event.Event, main *logger.Logger, showEvents bool, stdou
 	tasks := task.NewList(baseNumTasks)
 
 	// TODO: add a worker pool
-	worker(RuleIn, tasks)
+	worker(RuleIn, tasks, rules)
 }
 
-func worker(RuleIn <-chan *event.Event, tasks *task.List) {
-
+func worker(RuleIn <-chan *event.Event, tasks *task.List, rules event.Rules) {
 	for {
 		evt := <-RuleIn
 
@@ -77,119 +79,34 @@ func worker(RuleIn <-chan *event.Event, tasks *task.List) {
 			continue
 		}
 
-		// TODO: Use a hashmap instead of a switch (for performance improvement).
-		switch evt.Function {
-		case "EXECVE":
-			if analyse, err := ctx.ProcessExecve(evt); err != nil {
-				ctx.Error(evt.Function, err)
-			} else if analyse == true {
-				threat.YaraAnalysis(ctx)
-				threat.ExecveAnalysis(ctx)
-			}
-
-		case "sched_process_exec":
-			if analyse, err := ctx.ProcessSchedExecve(evt); err != nil {
-				ctx.Error(evt.Function, err)
-			} else if analyse == true {
-				threat.YaraAnalysis(ctx)
-				threat.ExecveAnalysis(ctx)
-			}
-
-		case "FORK":
-			if err := ctx.ProcessFork(evt); err != nil {
-				ctx.Error(evt.Function, err)
-			}
-
-		case "task_newtask":
-			if err := ctx.ProcessNewTask(evt); err != nil {
-				ctx.Error(evt.Function, err)
-			}
-
-		case "EXIT":
-			if err := ctx.ProcessExit(evt); err != nil {
-				ctx.Error(evt.Function, err)
-			}
-
-		case "UNSHARE":
-			if err := ctx.ProcessUnshare(evt); err != nil {
-				ctx.Error(evt.Function, err)
-			}
-
-		case "MOUNT":
-			if err := ctx.ProcessMount(evt); err != nil {
-				ctx.Error(evt.Function, err)
-			}
-
-		case "COMMIT_CREDS":
-			if err := ctx.ProcessCommitCreds(evt); err != nil {
-				ctx.Error(evt.Function, err)
-			}
-
-		case "SETHOSTNAME":
-			if err := ctx.ProcessSetHostname(evt); err != nil {
-				ctx.Error(evt.Function, err)
-			}
-
-		case "SETNS":
-			if err := ctx.ProcessSetNs(evt); err != nil {
-				ctx.Error(evt.Function, err)
-			}
-
-		case "PTRACE":
-			if tracee, err := ctx.ProcessPtrace(evt); err != nil {
-				ctx.Error(evt.Function, err)
-			} else if tracee != nil {
-				threat.PtraceAnalysis(tracee, ctx)
-			}
-
-		case "PROC_VM_WRITERV":
-			if tracee, err := ctx.ProcessPvmWritev(evt); err != nil {
-				ctx.Error(evt.Function, err)
-			} else if tracee != nil {
-				threat.PtraceAnalysis(tracee, ctx)
-			}
-
-		case "SIGACTION":
-			if signal, err := ctx.ProcessSigaction(evt); err != nil {
-				ctx.Error(evt.Function, err)
-			} else if signal > 0 {
-				threat.SignalAnalysis(signal, ctx)
-			}
-
-		case "CHDIR":
-			if err := ctx.ProcessChdir(evt); err != nil {
-				ctx.Error(evt.Function, err)
-			}
-
-		case "OPEN":
-			if err := ctx.ProcessOpen(evt); err != nil {
-				ctx.Error(evt.Function, err)
-			}
-
-		case "CLOSE":
-			if bin, err := ctx.ProcessClose(evt); err != nil {
-				ctx.Error(evt.Function, err)
-			} else if bin != nil {
-				threat.BinaryAnalysis(bin, ctx)
-			}
-
-		case "UNLINK":
-			if path, err := ctx.ProcessUnlink(evt); err != nil {
-				ctx.Error(evt.Function, err)
-			} else if path != "" {
-				threat.UnlinkAnalysis(path, ctx)
-			}
-
-		case "RENAME":
-			if bin, err := ctx.ProcessRename(evt); err != nil {
-				ctx.Error(evt.Function, err)
-			} else if bin != nil {
-				threat.BinaryAnalysis(bin, ctx)
-			}
-
-		default:
+		if rules[evt.Function] == nil {
 			ctx.Error(evt.Function,
 				errors.New("Received unexpected function event"))
+			continue
+		}
+
+		ioc, err := rules[evt.Function].ProcessEvent(ctx, evt)
+		if err != nil {
+			ctx.Error(evt.Function, err)
+		} else if rules[evt.Function].RequiresYara {
+			threat.YaraAnalysis(ctx)
+		}
+
+		// If there is a valid indicator of compromise, analyse it.
+		if ioc != nil {
+			rules[evt.Function].ThreatAnalysis(ioc, ctx)
 		}
 	}
+}
+
+// select let's you choose which kind of rules
+// the ruleEngine must use. (ftrace or eBPF)
+func selectRules(engine string) event.Rules {
+	// The current engine only supports ftrace events.
+	// eBPF support is in the roadmap.
+	if engine == "ftrace" {
+		return ftraceRules
+	}
+
+	return nil
 }

@@ -22,15 +22,16 @@ import (
 )
 
 var (
-	monitor *logger.Logger
+	monitor  *logger.Logger
+	rulesptr Rules
 )
 
 const (
 	eventFile = "/var/kanis/events.log"
 )
 
-func EnableMonitoring(events bool, console bool) error {
-	if events == false {
+func EnableMonitoring(showEvents string, console bool, rules Rules) error {
+	if showEvents == "" {
 		return nil
 	}
 
@@ -40,11 +41,17 @@ func EnableMonitoring(events bool, console bool) error {
 		return err
 	}
 
+	if err = checkRuleMonitoring(rules, showEvents); err != nil {
+		return err
+	}
+
+	rulesptr = rules
+
 	return nil
 }
 
 func logFork(child *task.Task, ctx *Context) {
-	if monitor == nil {
+	if monitor == nil || rulesptr["FORK"].log == false {
 		return
 	}
 
@@ -65,7 +72,7 @@ func logFork(child *task.Task, ctx *Context) {
 }
 
 func logExit(arg string, ctx *Context) {
-	if monitor != nil {
+	if monitor != nil && rulesptr["EXIT"].log == true {
 		log := monitor.Info("RuleEngine").
 			Str("Value", arg).
 			Str("Type", "Event")
@@ -75,7 +82,7 @@ func logExit(arg string, ctx *Context) {
 }
 
 func logExecve(ctx *Context, newArgv []string) {
-	if monitor != nil {
+	if monitor != nil && rulesptr["EXECVE"].log == true {
 		cp := []string{basePath(ctx.Current, newArgv[0])}
 		log := monitor.Info("RuleEngine").
 			Strs("Argv", append(cp, newArgv[1:]...)).
@@ -86,7 +93,7 @@ func logExecve(ctx *Context, newArgv []string) {
 }
 
 func logPtrace(tracee int, action string, ctx *Context) {
-	if monitor != nil {
+	if monitor != nil && rulesptr["PTRACE"].log == true {
 		log := monitor.Info("RuleEngine").
 			Int("Tracee", tracee).
 			Str("Type", "Event")
@@ -96,7 +103,7 @@ func logPtrace(tracee int, action string, ctx *Context) {
 }
 
 func logSigaction(signal string, ctx *Context) {
-	if monitor != nil {
+	if monitor != nil && rulesptr["SIGACTION"].log == true {
 		log := monitor.Info("RuleEngine").
 			Str("Signal", signal).
 			Str("Type", "Event")
@@ -106,7 +113,7 @@ func logSigaction(signal string, ctx *Context) {
 }
 
 func logOpen(path string, ctx *Context) {
-	if monitor != nil {
+	if monitor != nil && rulesptr["OPEN"].log == true {
 		log := monitor.Info("RuleEngine").
 			Str("File", basePath(ctx.Current, path)).
 			Str("Type", "Event")
@@ -116,7 +123,7 @@ func logOpen(path string, ctx *Context) {
 }
 
 func logClose(path string, ctx *Context) {
-	if monitor != nil {
+	if monitor != nil && rulesptr["CLOSE"].log == true {
 		log := monitor.Info("RuleEngine").
 			Str("File", basePath(ctx.Current, path)).
 			Str("Type", "Event")
@@ -126,7 +133,7 @@ func logClose(path string, ctx *Context) {
 }
 
 func logUnlink(path string, ctx *Context) {
-	if monitor != nil {
+	if monitor != nil && rulesptr["UNLINK"].log == true {
 		log := monitor.Info("RuleEngine").
 			Str("File", basePath(ctx.Current, path)).
 			Str("Type", "Event")
@@ -136,7 +143,7 @@ func logUnlink(path string, ctx *Context) {
 }
 
 func logRename(src, dst string, ctx *Context) {
-	if monitor != nil {
+	if monitor != nil && rulesptr["RENAME"].log == true {
 		log := monitor.Info("RuleEngine").
 			Str("Old", basePath(ctx.Current, src)).
 			Str("New", basePath(ctx.Current, dst)).
@@ -147,7 +154,7 @@ func logRename(src, dst string, ctx *Context) {
 }
 
 func logMount(path string, msg string, ctx *Context) {
-	if monitor != nil {
+	if monitor != nil && rulesptr["MOUNT"].log == true {
 		log := monitor.Info("RuleEngine").Dict("Mount", zerolog.Dict().
 			Str("Path", path).Str("Type", msg)).Str("Type", "Event")
 
@@ -156,19 +163,19 @@ func logMount(path string, msg string, ctx *Context) {
 }
 
 func (ctx *Context) Warn(function string, msg string) {
-	if monitor != nil {
+	if monitor != nil && rulesptr[function].log == true {
 		Send(function, ctx.PID, msg, ctx.Current, monitor.Warn("RuleEngine"))
 	}
 }
 
 func (ctx *Context) Debug(function string, msg string) {
-	if monitor != nil {
+	if monitor != nil && rulesptr[function].log == true {
 		Send(function, ctx.PID, msg, ctx.Current, monitor.Debug("RuleEngine"))
 	}
 }
 
 func (ctx *Context) Error(function string, err error) {
-	if monitor != nil {
+	if monitor != nil && rulesptr[function].log == true {
 		Send(function, ctx.PID, "", ctx.Current, monitor.Error(err, "RuleEngine"))
 	}
 }

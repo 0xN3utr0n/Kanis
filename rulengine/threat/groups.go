@@ -32,10 +32,10 @@ type Group struct {
 	wg       *sync.WaitGroup
 }
 
-func ExecveAnalysis(ctx *event.Context) {
+func ExecveAnalysis(ioc interface{}, ctx *event.Context) {
 	var wg sync.WaitGroup
 	grp := Group{"Defense Evasion", ctx, &wg}
-	bin := ctx.Current.GetElf()
+	bin := ioc.(*elf.Elf)
 
 	defer func() {
 		bin.Close()
@@ -49,18 +49,20 @@ func ExecveAnalysis(ctx *event.Context) {
 	grp.wg.Wait()
 }
 
-func SignalAnalysis(signal unix.Signal, ctx *event.Context) {
+func SignalAnalysis(ioc interface{}, ctx *event.Context) {
 	var wg sync.WaitGroup
 	grp := Group{"Defense Evasion", ctx, &wg}
+	signal := ioc.(unix.Signal)
 
 	grp.wg.Add(1)
 	grp.detectSigTrapHandler(signal)
 	grp.wg.Wait()
 }
 
-func PtraceAnalysis(tracee *task.Tracee, ctx *event.Context) {
+func PtraceAnalysis(ioc interface{}, ctx *event.Context) {
 	var wg sync.WaitGroup
 	grp := Group{"Defense Evasion", ctx, &wg}
+	tracee := ioc.(*task.Tracee)
 
 	grp.wg.Add(3)
 	go grp.detectTwoWayTracing()
@@ -69,9 +71,10 @@ func PtraceAnalysis(tracee *task.Tracee, ctx *event.Context) {
 	grp.wg.Wait()
 }
 
-func BinaryAnalysis(bin *elf.Elf, ctx *event.Context) {
+func BinaryAnalysis(ioc interface{}, ctx *event.Context) {
 	var wg sync.WaitGroup
 	grp := Group{"Persistence", ctx, &wg}
+	bin := ioc.(*elf.Elf)
 
 	defer bin.Close()
 
@@ -81,9 +84,10 @@ func BinaryAnalysis(bin *elf.Elf, ctx *event.Context) {
 	grp.wg.Wait()
 }
 
-func UnlinkAnalysis(path string, ctx *event.Context) {
+func UnlinkAnalysis(ioc interface{}, ctx *event.Context) {
 	var wg sync.WaitGroup
 	grp := Group{"Persistence", ctx, &wg}
+	path := ioc.(string)
 
 	grp.wg.Add(1)
 	grp.detectExecutableDeletion(path)

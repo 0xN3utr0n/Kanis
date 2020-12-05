@@ -61,7 +61,7 @@ func TestMain(m *testing.M) {
 	cwd, _ = os.Getwd()
 
 	go func() {
-		if err := exec.Command("Kanis", "-e").Run(); err != nil {
+		if err := exec.Command("Kanis", "-e=a").Run(); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}

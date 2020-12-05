@@ -48,7 +48,7 @@ func scanExecutables() error {
 }
 
 // ScanElf Checks whether the given filepath points to a valid ELF file.
-// In success, the file's metadata is stored in the database.
+// On success, the file's metadata is stored in the database.
 func ScanElf(file *Fstat) error {
 	var err error
 

@@ -24,35 +24,35 @@ import (
 )
 
 // ProcessMount Processes incoming Mount events for a given task.
-func (ctx *Context) ProcessMount(evt *Event) error {
+func (ctx *Context) ProcessMount(evt *Event) (interface{}, error) {
 	r, err := strconv.Atoi(evt.RetValue[0])
 	if err != nil {
-		return err
+		return nil, err
 	} else if r != 0 {
 		ctx.Debug(evt.Function, "Failed function call")
-		return nil
+		return nil, nil
 	}
 
 	args := evt.Args.([]string)
 	if len(args) != 2 {
-		return nil
+		return nil, nil
 	}
 
 	// CLONE_ flags
 	flags, err := strconv.ParseInt(args[1][2:], 16, 64)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if (flags & unix.MS_BIND) == 0 {
-		return nil
+		return nil, nil
 	}
 
 	path := args[0]
 
 	// Only interested in directories.
 	if fi, err := os.Lstat(path); err != nil || fi.IsDir() == false {
-		return err
+		return nil, err
 	}
 
 	var mount string
@@ -60,15 +60,15 @@ func (ctx *Context) ProcessMount(evt *Event) error {
 	if ctx.Current.NamespaceID(task.MountNs) > 0 {
 		mount, err = mountNamespace(ctx.Current, path)
 		if err != nil || mount == "" {
-			return err
+			return nil, err
 		}
 	} else {
 		// TODO: Add support for common mountpoints
-		return nil
+		return nil, nil
 	}
 
 	logMount(path, mount, ctx)
-	return nil
+	return nil, nil
 }
 
 func mountNamespace(current *task.Task, path string) (string, error) {

@@ -30,12 +30,12 @@ const (
 )
 
 // ProcessFork Processes incoming FORK events for a given task.
-func (ctx *Context) ProcessFork(evt *Event) error {
+func (ctx *Context) ProcessFork(evt *Event) (interface{}, error) {
 	lpid := ctx.Current.GetLastFork()
 
 	fork := ctx.List.Get(lpid)
 	if fork == nil {
-		return nil
+		return nil, nil
 	}
 
 	var err error
@@ -48,9 +48,9 @@ func (ctx *Context) ProcessFork(evt *Event) error {
 	// The new Child's PID (Virtual PID for those whithin a namespace)
 	retPid, err := strconv.Atoi(evt.RetValue[0])
 	if err != nil {
-		return err
+		return nil, err
 	} else if retPid < 0 {
-		return fmt.Errorf("Failed %s: %d", evt.Function, retPid)
+		return nil, fmt.Errorf("Failed %s: %d", evt.Function, retPid)
 	}
 
 	vpid := ctx.Current.GetVPid()
@@ -74,27 +74,27 @@ func (ctx *Context) ProcessFork(evt *Event) error {
 
 	logFork(fork, ctx)
 
-	return nil
+	return nil, nil
 }
 
 // ProcessNewTask Processes incoming task_newtask events for a given task.
 // Runs before ProcessFork(), and creates the basic structures for the new child task.
-func (ctx *Context) ProcessNewTask(evt *Event) error {
+func (ctx *Context) ProcessNewTask(evt *Event) (interface{}, error) {
 	args := evt.Args.([]string)
 	if len(args) < 3 {
-		return errors.New("Invalid arguments - " + evt.Function)
+		return nil, errors.New("Invalid arguments - " + evt.Function)
 	}
 
 	// Real PID of the new child (even for those within other namespaces).
 	fork, err := strconv.Atoi(args[0])
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// CLONE_ flags
 	flags, err := strconv.ParseUint(args[len(args)-2], 16, 64)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	child := new(task.Task)
@@ -111,61 +111,63 @@ func (ctx *Context) ProcessNewTask(evt *Event) error {
 	ctx.List.Insert(fork, child)
 	ctx.Current.SetLastFork(fork)
 
-	return nil
+	return nil, nil
 }
 
 // ProcessExit Processes incoming EXIT events for a given task.
 // It also deletes all related structures.
-func (ctx *Context) ProcessExit(evt *Event) error {
+func (ctx *Context) ProcessExit(evt *Event) (interface{}, error) {
 	if ctx.Current.IsThread() == false {
 		if ctx.Current.IsDead(ctx.PID) == false {
-			return nil
+			return nil, nil
 		}
 	}
 
 	if err := database.DeleteAllFileDescriptors(ctx.PID); err != nil {
-		return err
+		return nil, err
 	}
 
 	ctx.List.Delete(ctx.PID)
 
 	logExit(evt.Args.([]string)[0], ctx)
 
-	return nil
+	return nil, nil
 }
 
 // ProcessSigaction Processes incoming SIGACTION events for a given task.
-func (ctx *Context) ProcessSigaction(evt *Event) (unix.Signal, error) {
+func (ctx *Context) ProcessSigaction(evt *Event) (interface{}, error) {
+	var s unix.Signal
+
 	r, err := strconv.Atoi(evt.RetValue[0])
 	if err != nil {
-		return 0, err
+		return s, err
 	} else if r < 0 {
 		ctx.Debug(evt.Function, "Failed function call")
-		return 0, nil
+		return s, nil
 	}
 
 	args := evt.Args.([]string)
 	if len(args) != 2 {
-		return 0, nil
+		return s, nil
 	}
 
 	signal, err := strconv.Atoi(args[0])
 	if err != nil {
-		return 0, err
+		return s, err
 	}
 
 	// Discard if it's SIG_DFL or SIG_IGN
 	if len(args[1]) == 1 {
-		return 0, nil
+		return s, nil
 	}
 
 	// Interesting signals are between 0 and 16
 	if signal >= task.MaxSignals || ctx.Current.GetSignal(signal) {
-		return 0, nil
+		return s, nil
 	}
 
 	ctx.Current.SetSignal(signal)
-	s := unix.Signal(signal)
+	s = unix.Signal(signal)
 
 	logSigaction(s.String(), ctx)
 
@@ -174,23 +176,23 @@ func (ctx *Context) ProcessSigaction(evt *Event) (unix.Signal, error) {
 
 // ProcessCommitCreds Processes incoming COMMIT_CREDS events for a given task.
 // Used to retrieve the task's uid, gid, eid and egid.
-func (ctx *Context) ProcessCommitCreds(evt *Event) error {
+func (ctx *Context) ProcessCommitCreds(evt *Event) (interface{}, error) {
 	r, err := strconv.Atoi(evt.RetValue[0])
 	if err != nil {
-		return err
+		return nil, err
 	} else if r < 0 {
 		ctx.Debug(evt.Function, "Failed function call")
-		return nil
+		return nil, nil
 	}
 
 	args := evt.Args.([]string)
 	if len(args) != 4 {
-		return nil
+		return nil, nil
 	}
 
 	var creds [4]string
 	copy(creds[:], args)
 	ctx.Current.SetCreds(creds)
 
-	return nil
+	return nil, nil
 }

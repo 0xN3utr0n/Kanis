@@ -24,43 +24,43 @@ import (
 
 // ProcessSetHostname Processes incoming SETHOSTNAME events for a given task.
 // Only useful if the task is in a UTS namespace.
-func (ctx *Context) ProcessSetHostname(evt *Event) error {
+func (ctx *Context) ProcessSetHostname(evt *Event) (interface{}, error) {
 	r, err := strconv.Atoi(evt.RetValue[0])
 	if err != nil {
-		return err
+		return nil, err
 	} else if r < 0 {
 		ctx.Debug(evt.Function, "Failed function call")
-		return nil
+		return nil, nil
 	}
 
 	args := evt.Args.([]string)
 
 	if ctx.Current.NamespaceID(task.UtsNs) == 0 { // Not inside a namespace
-		return nil
+		return nil, nil
 	}
 
 	if err := ctx.Current.UpdateNamespace(task.UtsNs, args[0]); err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return nil, nil
 }
 
 // ProcessUnshare Processes incoming UNSHARE events for a given task.
 // Used to detect the creation of new Namespaces.
-func (ctx *Context) ProcessUnshare(evt *Event) error {
+func (ctx *Context) ProcessUnshare(evt *Event) (interface{}, error) {
 	r, err := strconv.Atoi(evt.RetValue[0])
 	if err != nil {
-		return err
+		return nil, err
 	} else if r != 0 {
 		ctx.Debug(evt.Function, "Failed function call")
-		return nil
+		return nil, nil
 	}
 
 	args := evt.Args.([]string)
 	flags, err := strconv.ParseUint(args[0][2:], 16, 64)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if (flags & unix.CLONE_NEWPID) != 0 {
@@ -70,24 +70,24 @@ func (ctx *Context) ProcessUnshare(evt *Event) error {
 	ctx.Current.SwitchNamespace(flags)
 	ctx.Current.SetFlags(flags | ctx.Current.GetFlags())
 
-	return nil
+	return nil, nil
 }
 
 // ProcessSetNs Processes incoming SetNS events for a given task.
 // Useless event right now.
-func (ctx *Context) ProcessSetNs(evt *Event) error {
+func (ctx *Context) ProcessSetNs(evt *Event) (interface{}, error) {
 	r, err := strconv.Atoi(evt.RetValue[0])
 	if err != nil {
-		return err
+		return nil, err
 	} else if r != 0 {
 		ctx.Debug(evt.Function, "Failed function call")
-		return nil
+		return nil, nil
 	}
 
 	args := evt.Args.([]string)
 	flags, err := strconv.ParseUint(args[0][1:], 16, 64)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// TODO: Thought the task's FDs (database)
@@ -95,5 +95,5 @@ func (ctx *Context) ProcessSetNs(evt *Event) error {
 	// target process PID (which has a valid namespace id).
 
 	ctx.Current.SetFlags(ctx.Current.GetFlags() | flags)
-	return nil
+	return nil, nil
 }

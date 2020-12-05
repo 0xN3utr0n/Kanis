@@ -18,12 +18,11 @@ package event
 import (
 	"strconv"
 
-	"github.com/0xN3utr0n/Kanis/rulengine/task"
 	"golang.org/x/sys/unix"
 )
 
 // ProcessPtrace Processes incoming PTRACE events for a given task.
-func (ctx *Context) ProcessPtrace(evt *Event) (*task.Tracee, error) {
+func (ctx *Context) ProcessPtrace(evt *Event) (interface{}, error) {
 	r, err := strconv.Atoi(evt.RetValue[0])
 	if err != nil {
 		return nil, err
@@ -94,7 +93,7 @@ func (ctx *Context) ProcessPtrace(evt *Event) (*task.Tracee, error) {
 }
 
 // ProcessPvmWritev Processes incoming PROC_VM_WRITERV events for a given task.
-func (ctx *Context) ProcessPvmWritev(evt *Event) (*task.Tracee, error) {
+func (ctx *Context) ProcessPvmWritev(evt *Event) (interface{}, error) {
 	r, err := strconv.Atoi(evt.RetValue[0])
 	if err != nil {
 		return nil, err

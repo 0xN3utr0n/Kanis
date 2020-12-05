@@ -18,7 +18,7 @@ BINTEST         ?= $(BINPATH)/threats.test
 TEST_SAMPLES    ?= $(PWD)/Tests
 GO              ?= go
 USER_ID         ?= $(shell id -u)
-PACKAGES        ?= rulengine logger ftrace
+PACKAGES        ?= rulengine logger ftrace scanner
 PREFIX          ?= /var/kanis
 
 all: build

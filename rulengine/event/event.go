@@ -34,7 +34,7 @@ type Event struct {
 
 // Context contains an event context.
 // Useful for the multi-threaded RuleEngine, since
-// each worker will have it's own event context.
+// each worker will have its own event context.
 type Context struct {
 	Current *task.Task
 	List    *task.List
@@ -46,7 +46,8 @@ func SwitchContext(evt *Event, tasks *task.List) (*Context, bool) {
 	return &Context{current, tasks, evt.PID}, src
 }
 
-// Filter Discards events that match against some basic rules.
+// Filter Discards events that might cause false-positives
+// or generate too much noise.
 func Filter(evt *Event, ctx *Context, proc bool) bool {
 	var status bool
 

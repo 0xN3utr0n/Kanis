@@ -25,13 +25,13 @@ import (
 
 // ProcessExecve Processes incoming EXECVE events for a given task.
 // Used to retrieve the task's executable and commandline arguments.
-func (ctx *Context) ProcessExecve(evt *Event) (bool, error) {
+func (ctx *Context) ProcessExecve(evt *Event) (interface{}, error) {
 	r, err := strconv.Atoi(evt.RetValue[0])
 	if err != nil {
-		return false, err
+		return nil, err
 	} else if r != 0 {
 		ctx.Debug(evt.Function, "Failed function call")
-		return false, nil
+		return nil, nil
 	}
 
 	// arg[0] = Contains the executable's path.
@@ -51,35 +51,35 @@ func (ctx *Context) ProcessExecve(evt *Event) (bool, error) {
 
 	e, err := elf.New(argv[0])
 	if err != nil || e == nil {
-		return false, err
+		return nil, err
 	}
 
 	ctx.Current.SetElf(e)
 
-	return true, nil
+	return e, nil
 }
 
 // ProcessSchedExecve Processes incoming sched_process_exec events for a given task.
 // It's a backup event for cases where the corresponding EXECVE event is missed.
 // Used to retrieve the task's executable and commandline arguments.
-func (ctx *Context) ProcessSchedExecve(evt *Event) (bool, error) {
+func (ctx *Context) ProcessSchedExecve(evt *Event) (interface{}, error) {
 
 	// args[0] = Contains the executable's path.
 	// args[1] = PID of the task who will be assigned to the new executable. (current)
 	// args[2] = PID of the task who made the sys_execve() call. (Already dead)
 	args := evt.Args.([]string)
 	if len(args) != 3 {
-		return false, errors.New("Invalid arguments - " + evt.Function)
+		return nil, errors.New("Invalid arguments - " + evt.Function)
 	}
 
 	oldPid, err := strconv.Atoi(args[2])
 	if err != nil || oldPid <= 1 {
-		return false, err
+		return nil, err
 	}
 
 	// This is the usual behavior: Current task is sys_execve() caller.
 	if oldPid == ctx.PID {
-		return false, nil
+		return nil, nil
 	}
 
 	var argv []string
@@ -97,12 +97,12 @@ func (ctx *Context) ProcessSchedExecve(evt *Event) (bool, error) {
 
 	e, err := elf.New(argv[0])
 	if err != nil || e == nil {
-		return false, err
+		return nil, err
 	}
 
 	ctx.Current.SetElf(e)
 
-	return true, nil
+	return e, nil
 }
 
 // processExecveArgv Tries different methods in order to obtain the task's command-line arguments.

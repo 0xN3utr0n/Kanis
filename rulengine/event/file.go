@@ -32,47 +32,47 @@ const maxRecursion = 5
 
 // ProcessOpen Processes incoming OPEN events for a given task.
 // It currently only supports write attempts to monitored files.
-func (ctx *Context) ProcessOpen(evt *Event) error {
+func (ctx *Context) ProcessOpen(evt *Event) (interface{}, error) {
 	fd, err := strconv.Atoi(evt.RetValue[0])
 	if err != nil {
-		return err
+		return nil, err
 	} else if fd < 0 {
 		ctx.Debug(evt.Function, "Failed function call")
-		return nil
+		return nil, nil
 	}
 
 	args := evt.Args.([]string)
 	if len(args) != 2 {
-		return nil
+		return nil, nil
 	}
 
 	flags, err := strconv.Atoi(args[1])
 	if err != nil || ((flags & unix.O_WRONLY) == 0) {
-		return err
+		return nil, err
 	}
 
 	file, err := absFilePath(ctx.Current, args[0])
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	ok, err := database.ExistsExecutable(file)
 	if err != nil || ok == false {
-		return err
+		return nil, err
 	}
 
 	if err := database.InsertFileDescriptor(fd, ctx.PID, file); err != nil {
-		return err
+		return nil, err
 	}
 
 	logOpen(file, ctx)
 
-	return nil
+	return nil, nil
 }
 
 // ProcessClose Processes incoming CLOSE events for a given task.
 // Returns an Elf object for further analysis.
-func (ctx *Context) ProcessClose(evt *Event) (*elf.Elf, error) {
+func (ctx *Context) ProcessClose(evt *Event) (interface{}, error) {
 	ret, err := strconv.Atoi(evt.RetValue[0])
 	if err != nil {
 		return nil, err
@@ -113,7 +113,7 @@ func (ctx *Context) ProcessClose(evt *Event) (*elf.Elf, error) {
 
 // ProcessUnlink Processes incoming UNLINK events for a given task.
 // Returns the monitored file's path.
-func (ctx *Context) ProcessUnlink(evt *Event) (string, error) {
+func (ctx *Context) ProcessUnlink(evt *Event) (interface{}, error) {
 	ret, err := strconv.Atoi(evt.RetValue[0])
 	if err != nil {
 		return "", err
@@ -145,7 +145,7 @@ func (ctx *Context) ProcessUnlink(evt *Event) (string, error) {
 // ProcessRename Processes incoming RENAME events for a given task.
 // At least one of the paths (old or new) must be currently monitored.
 // Returns the corresponding ELF object to new path.
-func (ctx *Context) ProcessRename(evt *Event) (*elf.Elf, error) {
+func (ctx *Context) ProcessRename(evt *Event) (interface{}, error) {
 	ret, err := strconv.Atoi(evt.RetValue[0])
 	if err != nil {
 		return nil, err
@@ -195,22 +195,22 @@ func (ctx *Context) ProcessRename(evt *Event) (*elf.Elf, error) {
 
 // ProcessChdir Processes incoming CHDIR events for a given task.
 // Used to retrieve the task's Current Working Directory (CWD).
-func (ctx *Context) ProcessChdir(evt *Event) error {
+func (ctx *Context) ProcessChdir(evt *Event) (interface{}, error) {
 	r, err := strconv.Atoi(evt.RetValue[0])
 	if err != nil {
-		return err
+		return nil, err
 	} else if r < 0 {
 		ctx.Debug(evt.Function, "Failed function call")
-		return nil
+		return nil, nil
 	}
 
 	cwd, err := absDirPath(ctx.Current, evt.Args.([]string)[0])
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	ctx.Current.SetCwd(cwd)
-	return nil
+	return nil, nil
 }
 
 // absFilePath returns a valid and absolute path for the given file.
