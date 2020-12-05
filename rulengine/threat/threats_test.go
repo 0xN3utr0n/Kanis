@@ -85,7 +85,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestMasquerading(t *testing.T) {
-	err := exec.Command("/usr/bin/bash", "Tests/sample1/sample1.sh").Run()
+	err := exec.Command("/usr/bin/bash", "tests-samples/sample1/sample1.sh").Run()
 	if err != nil {
 		t.Error(err)
 	}
@@ -109,13 +109,13 @@ func TestMasquerading(t *testing.T) {
 }
 
 func TestSoftwarePacking(t *testing.T) {
-	err := exec.Command("Tests/sample2/sample2.bin", "0.5").Run()
+	err := exec.Command("tests-samples/sample2/sample2.bin", "0.5").Run()
 	if err != nil {
 		t.Error(err)
 	}
 
 	msg := []threatEvent{
-		{Task{cwd + "/Tests/sample2/sample2.bin", 0, "Thread", 0}, Indicator{},
+		{Task{cwd + "/tests-samples/sample2/sample2.bin", 0, "Thread", 0}, Indicator{},
 			Alert{3, "Defense Evasion", "Software Packing"}},
 	}
 
@@ -125,15 +125,15 @@ func TestSoftwarePacking(t *testing.T) {
 }
 
 func TestTracingProtection(t *testing.T) {
-	err := exec.Command("Tests/sample3/sample3.bin").Run()
+	err := exec.Command("tests-samples/sample3/sample3.bin").Run()
 	if err != nil && !strings.Contains(err.Error(), "stop signal") {
 		t.Error(err)
 	}
 
 	msg := []threatEvent{
-		{Task{cwd + "/Tests/sample3/sample3.bin", 0, "Process", 0}, Indicator{},
+		{Task{cwd + "/tests-samples/sample3/sample3.bin", 0, "Process", 0}, Indicator{},
 			Alert{1, "Defense Evasion", "Two-Way-Tracing Protection"}},
-		{Task{cwd + "/Tests/sample3/sample3.bin", 0, "Thread", 0}, Indicator{},
+		{Task{cwd + "/tests-samples/sample3/sample3.bin", 0, "Thread", 0}, Indicator{},
 			Alert{1, "Defense Evasion", "Traceme Protection"}},
 	}
 
@@ -143,14 +143,14 @@ func TestTracingProtection(t *testing.T) {
 }
 
 func TestExecutableDeletion(t *testing.T) {
-	os.Chdir("Tests/sample4")
+	os.Chdir("tests-samples/sample4")
 	err := exec.Command("./sample4.bin").Run()
 	if err != nil {
 		t.Error(err)
 	}
 
 	msg := []threatEvent{
-		{Task{"/usr/bin/rm", 0, "Process", 0}, Indicator{cwd + "/Tests/sample4/sample4.bin"},
+		{Task{"/usr/bin/rm", 0, "Process", 0}, Indicator{cwd + "/tests-samples/sample4/sample4.bin"},
 			Alert{1, "Persistence", "Executable Deletion"}},
 	}
 
@@ -161,15 +161,15 @@ func TestExecutableDeletion(t *testing.T) {
 }
 
 func TestSigTrapHandler(t *testing.T) {
-	err := exec.Command("Tests/sample5/sample5.bin").Run()
+	err := exec.Command("tests-samples/sample5/sample5.bin").Run()
 	if err != nil {
 		t.Error(err)
 	}
 
 	msg := []threatEvent{
-		{Task{cwd + "/Tests/sample5/sample5.bin", 0, "Thread", 0}, Indicator{cwd + "/Tests/sample5/sample5.bin"},
+		{Task{cwd + "/tests-samples/sample5/sample5.bin", 0, "Thread", 0}, Indicator{cwd + "/tests-samples/sample5/sample5.bin"},
 			Alert{3, "Defense Evasion", "Software Packing"}},
-		{Task{cwd + "/Tests/sample5/sample5.bin", 3, "Thread", 0}, Indicator{},
+		{Task{cwd + "/tests-samples/sample5/sample5.bin", 3, "Thread", 0}, Indicator{},
 			Alert{1, "Defense Evasion", "SIGTRAP-Handler Protection"}},
 	}
 

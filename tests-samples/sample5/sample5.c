@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-// gcc -static -o Tests/test5/test5 Tests/test5/test5.c
+// gcc -static -o tests-samples/test5/test5 tests-samples/test5/test5.c
 
 static int tracer = 0;
 

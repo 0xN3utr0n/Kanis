@@ -15,7 +15,7 @@
 
 BINPATH         ?= $(PWD)/bin
 BINTEST         ?= $(BINPATH)/threats.test
-TEST_SAMPLES    ?= $(PWD)/Tests
+TEST_SAMPLES    ?= $(PWD)/tests-samples
 GO              ?= go
 USER_ID         ?= $(shell id -u)
 PACKAGES        ?= rulengine logger ftrace scanner
